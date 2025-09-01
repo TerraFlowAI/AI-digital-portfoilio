@@ -367,13 +367,13 @@ export default function AboutPage() {
                         </div>
                     </div>
                 </div>
-                <div className="relative w-full h-[480px] z-10">
+                <div className="relative w-full h-[520px] z-10">
                     <Image
                         src="https://res.cloudinary.com/dvic0tda9/image/upload/v1756748658/Generated_Image_September_01_2025_-_11_12PM_nxycgm_e_improve_e_sharpen_qoepnc.jpg"
                         alt="Maya Chen"
                         width={600}
                         height={800}
-                        className="rounded-3xl object-cover w-full h-full"
+                        className="rounded-3xl object-cover object-top w-full h-full"
                     />
                 </div>
             </div>
