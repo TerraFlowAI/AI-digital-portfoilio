@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { Chart } from 'chart.js/auto';
 import * as THREE from 'three';
+import { EtherealShadow } from '@/components/ui/etheral-shadow';
 
 export default function AboutPage() {
   useEffect(() => {
@@ -136,179 +137,18 @@ export default function AboutPage() {
     };
   }, []);
 
-  useEffect(() => {
-    const container = document.getElementById('caustic-shader-container');
-    if (!container) return;
-
-    const scene = new THREE.Scene();
-    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-    const renderer = new THREE.WebGLRenderer();
-    renderer.setSize(container.clientWidth, container.clientHeight);
-    container.appendChild(renderer.domElement);
-
-    const vertexShader = `
-        void main() {
-            gl_Position = vec4(position, 1.0);
-        }
-    `;
-
-    const fragmentShader = `
-        uniform float iTime;
-        uniform vec2 iResolution;
-
-        vec4 mod289(vec4 x) {
-            return x - floor(x / 289.0) * 289.0;
-        }
-
-        vec4 permute(vec4 x) {
-            return mod289((x * 34.0 + 1.0) * x);
-        }
-
-        vec4 snoise(vec3 v) {
-            const vec2 C = vec2(1.0 / 6.0, 1.0 / 3.0);
-
-            vec3 i  = floor(v + dot(v, vec3(C.y)));
-            vec3 x0 = v   - i + dot(i, vec3(C.x));
-
-            vec3 g = step(x0.yzx, x0.xyz);
-            vec3 l = 1.0 - g;
-            vec3 i1 = min(g.xyz, l.zxy);
-            vec3 i2 = max(g.xyz, l.zxy);
-
-            vec3 x1 = x0 - i1 + C.x;
-            vec3 x2 = x0 - i2 + C.y;
-            vec3 x3 = x0 - 0.5;
-
-            vec4 p = permute(permute(permute(i.z + vec4(0.0, i1.z, i2.z, 1.0))
-                                    + i.y + vec4(0.0, i1.y, i2.y, 1.0))
-                                    + i.x + vec4(0.0, i1.x, i2.x, 1.0));
-
-            vec4 j = p - 49.0 * floor(p / 49.0);
-
-            vec4 x_ = floor(j / 7.0);
-            vec4 y_ = floor(j - 7.0 * x_); 
-
-            vec4 x = (x_ * 2.0 + 0.5) / 7.0 - 1.0;
-            vec4 y = (y_ * 2.0 + 0.5) / 7.0 - 1.0;
-
-            vec4 h = 1.0 - abs(x) - abs(y);
-
-            vec4 b0 = vec4(x.xy, y.xy);
-            vec4 b1 = vec4(x.zw, y.zw);
-
-            vec4 s0 = floor(b0) * 2.0 + 1.0;
-            vec4 s1 = floor(b1) * 2.0 + 1.0;
-            vec4 sh = -step(h, vec4(0.0));
-
-            vec4 a0 = b0.xzyw + s0.xzyw * sh.xxyy;
-            vec4 a1 = b1.xzyw + s1.xzyw * sh.zzww;
-
-            vec3 g0 = vec3(a0.xy, h.x);
-            vec3 g1 = vec3(a0.zw, h.y);
-            vec3 g2 = vec3(a1.xy, h.z);
-            vec3 g3 = vec3(a1.zw, h.w);
-
-            vec4 m = max(0.6 - vec4(dot(x0, x0), dot(x1, x1), dot(x2, x2), dot(x3, x3)), 0.0);
-            vec4 m2 = m * m;
-            vec4 m3 = m2 * m;
-            vec4 m4 = m2 * m2;
-            vec3 grad =
-              -6.0 * m3.x * x0 * dot(x0, g0) + m4.x * g0 +
-              -6.0 * m3.y * x1 * dot(x1, g1) + m4.y * g1 +
-              -6.0 * m3.z * x2 * dot(x2, g2) + m4.z * g2 +
-              -6.0 * m3.w * x3 * dot(x3, g3) + m4.w * g3;
-            vec4 px = vec4(dot(x0, g0), dot(x1, g1), dot(x2, g2), dot(x3, g3));
-            return 42.0 * vec4(grad, dot(m4, px));
-        }
-
-        void main() {
-            vec2 fragCoord = gl_FragCoord.xy;
-            vec2 p = (-iResolution.xy + 2.0*fragCoord) / iResolution.y;
-
-            vec3 ww = normalize(-vec3(0., 1., 1.));
-            vec3 uu = normalize(cross(ww, vec3(0., 1., 0.)));
-            vec3 vv = normalize(cross(uu,ww));
-
-            vec3 rd = p.x*uu + p.y*vv + 1.5*ww;
-            vec3 pos = -ww + rd*(ww.y/rd.y);
-            pos.y = iTime*0.3;
-            pos *= 3.;
-
-            vec4 n = snoise( pos );
-                
-            pos -= 0.07*n.xyz;
-            n = snoise( pos );
-
-            pos -= 0.07*n.xyz;
-            n = snoise( pos );
-
-            float intensity = exp(n.w*3. - 1.5);
-            
-            vec3 color = vec3(intensity);
-            color.b += intensity * 0.3;
-            color.g += intensity * 0.1;
-            
-            gl_FragColor = vec4(color, 1.);
-        }
-    `;
-
-    const material = new THREE.ShaderMaterial({
-      vertexShader,
-      fragmentShader,
-      uniforms: {
-        iTime: { value: 0 },
-        iResolution: {
-          value: new THREE.Vector2(
-            container.clientWidth,
-            container.clientHeight
-          ),
-        },
-      },
-    });
-
-    const geometry = new THREE.PlaneGeometry(2, 2);
-    const mesh = new THREE.Mesh(geometry, material);
-    scene.add(mesh);
-
-    let animationFrameId: number;
-
-    function animate() {
-      animationFrameId = requestAnimationFrame(animate);
-      material.uniforms.iTime.value += 0.003;
-      renderer.render(scene, camera);
-    }
-
-    function handleResize() {
-      if (container) {
-        renderer.setSize(container.clientWidth, container.clientHeight);
-        material.uniforms.iResolution.value.set(
-          container.clientWidth,
-          container.clientHeight
-        );
-      }
-    }
-
-    window.addEventListener('resize', handleResize);
-    animate();
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-      window.removeEventListener('resize', handleResize);
-      if (container && renderer.domElement) {
-        container.removeChild(renderer.domElement);
-      }
-      renderer.dispose();
-    };
-  }, []);
-
   return (
     <div className="antialiased selection:bg-white selection:text-neutral-900 text-white/90 bg-neutral-950 font-body">
       <HeaderNav />
       <main>
-        <section className="relative max-w-7xl mx-auto px-4 sm:px-6 mt-10 sm:mt-16">
-          <div id="caustic-shader-container" className="absolute top-0 left-0 w-full h-full -z-10"></div>
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            <div className="lg:col-span-7">
+        <section className="relative h-screen">
+          <EtherealShadow
+            color="rgba(128, 128, 128, 1)"
+            animation={{ scale: 100, speed: 90 }}
+            noise={{ opacity: 1, scale: 1.2 }}
+            sizing="fill"
+          >
+            <div className="lg:col-span-7 z-10 text-center">
               <h1 className="leading-none text-white tracking-tight">
                 <span className="block text-[12vw] sm:text-[10vw] md:text-[8vw] lg:text-[7vw] font-semibold">
                   <span
@@ -336,12 +176,12 @@ export default function AboutPage() {
                   </span>
                 </span>
               </h1>
-              <p className="sm:mt-5 sm:text-3xl leading-relaxed max-w-2xl text-base text-white/70 tracking-tight mt-4">
+              <p className="sm:mt-5 sm:text-3xl leading-relaxed max-w-2xl text-base text-white/70 tracking-tight mt-4 mx-auto">
                 AI Engineer &amp; Frontend — shipping agentic systems, RAG
                 pipelines, and developer UX. I blend product intuition with
                 systems engineering to build fast, reliable LLM apps.
               </p>
-              <div className="mt-6 flex flex-col sm:flex-row gap-3">
+              <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
                 <a
                   href="#work"
                   className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-medium tracking-tight text-neutral-900 bg-white hover:bg-white/90 border border-white/10"
@@ -357,7 +197,7 @@ export default function AboutPage() {
                   <span className="">hello@mayachen.dev</span>
                 </a>
               </div>
-              <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl mx-auto">
                 <div className="flex items-start gap-3 border-t border-white/10 pt-4">
                   <MapPin className="w-[18px] h-[18px] text-white/50 mt-0.5" />
                   <div>
@@ -393,51 +233,7 @@ export default function AboutPage() {
                 </div>
               </div>
             </div>
-            <div className="lg:col-span-5">
-              <div className="relative aspect-[4/5] sm:aspect-[5/6] overflow-hidden shadow-[0_8px_30px_rgba(0,0,0,0.35)] bg-white/5 rounded-3xl border border-white/10">
-                <Image
-                  src="https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/9b22c33a-b017-42bd-bab5-89be63576edd_800w.jpg"
-                  alt="Maya at work"
-                  fill
-                  className="object-cover"
-                  style={{
-                    filter: 'grayscale(100%) saturate(0.7) contrast(1.1)',
-                  }}
-                  data-ai-hint="person working"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
-                <div className="absolute bottom-4 left-4 right-4 grid grid-cols-3 gap-3">
-                  <div className="rounded-xl bg-white/10 backdrop-blur-md border border-white/15 p-3 shadow-lg">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-2 h-2 rounded-full bg-white/50"></div>
-                      <div className="text-lg font-semibold tracking-tight text-white">
-                        82%
-                      </div>
-                    </div>
-                    <p className="text-[11px] text-white/70">pass@1 eval</p>
-                  </div>
-                  <div className="rounded-xl bg-white/10 backdrop-blur-md border border-white/15 p-3 shadow-lg">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-2 h-2 rounded-full bg-white/50"></div>
-                      <div className="text-lg font-semibold tracking-tight text-white">
-                        780ms
-                      </div>
-                    </div>
-                    <p className="text-[11px] text-white/70">p95 latency</p>
-                  </div>
-                  <div className="rounded-xl bg-white/10 backdrop-blur-md border border-white/15 p-3 shadow-lg">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-2 h-2 rounded-full bg-white/50"></div>
-                      <div className="text-lg font-semibold tracking-tight text-white">
-                        1.2k
-                      </div>
-                    </div>
-                    <p className="text-[11px] text-white/70">tests</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          </EtherealShadow>
         </section>
 
         <section
