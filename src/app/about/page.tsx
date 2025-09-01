@@ -1003,7 +1003,7 @@ export default function AboutPage() {
           </div>
         </section>
         <ContactSection />
-        <ContactFooter />
+        <ContactFooter quote='"Simplicity is the ultimate sophistication."' author="— Leonardo da Vinci"/>
       </main>
     </div>
   );

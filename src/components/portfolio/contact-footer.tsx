@@ -1,7 +1,12 @@
 
 import { Linkedin, Twitter, Dribbble, Github, Mail, Calendar, Handshake, Globe } from 'lucide-react';
 
-export function ContactFooter() {
+interface ContactFooterProps {
+  quote?: string;
+  author?: string;
+}
+
+export function ContactFooter({ quote = '“The details are not the details.<br /> <span className="text-white/70">They make </span><span className="text-yellow-500">the </span><span className="text-orange-500">design.”</span>', author = '— Charles Eames' }: ContactFooterProps) {
     return (
         <section id="contact" className="max-w-7xl sm:px-6 sm:mt-24 border-t border-white/10 mt-16 mx-auto mb-16 pt-10 px-4">
        <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-neutral-950 text-white p-6 sm:p-8">
@@ -11,10 +16,11 @@ export function ContactFooter() {
            <div className="absolute inset-0 bg-[radial-gradient(#ffffff0d_1px,transparent_1px)] [background-size:20px_20px] opacity-[0.15]"></div>
          </div>
           <div className="relative">
-           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl leading-tight font-medium tracking-tight">
-           “The details are not the details.<br /> <span className="text-white/70">They make </span><span className="text-yellow-500">the </span><span className="text-orange-500">design.”</span>
+           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl leading-tight font-medium tracking-tight"
+            dangerouslySetInnerHTML={{ __html: quote }}
+           >
            </h2>
-           <p className="mt-2 text-right text-white/50">— Charles Eames</p>
+           <p className="mt-2 text-right text-white/50">{author}</p>
             <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 md:divide-x md:divide-white/10">
              <div className="">
                <p className="text-sm text-white/70">Email</p>
