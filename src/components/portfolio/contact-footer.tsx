@@ -12,7 +12,7 @@ export function ContactFooter() {
          </div>
           <div className="relative">
            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl leading-tight font-medium tracking-tight">
-           “The details are not the details. <span className="text-white/70">They make </span><span className="text-yellow-500">the </span><span className="text-orange-500">design.”</span>
+           “The details are not the details.<br /> <span className="text-white/70">They make </span><span className="text-yellow-500">the </span><span className="text-orange-500">design.”</span>
            </h2>
            <p className="mt-2 text-right text-white/50">— Charles Eames</p>
             <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 md:divide-x md:divide-white/10">
