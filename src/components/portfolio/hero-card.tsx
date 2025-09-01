@@ -12,31 +12,46 @@ const titles = [
 
 const VaporText = ({ text }: { text: string }) => {
     const [displayedText, setDisplayedText] = useState('');
-    const [isVaporizing, setIsVaporizing] = useState(false);
 
     useEffect(() => {
-        setIsVaporizing(true);
+        let isMounted = true;
         const vaporizeOut = async () => {
-            for (let i = displayedText.length; i >= 0; i--) {
+            for (let i = text.length; i >= 0; i--) {
+                if (!isMounted) return;
                 await new Promise(resolve => setTimeout(resolve, 30));
-                setDisplayedText(prev => prev.slice(0, i));
+                setDisplayedText(text.slice(0, i));
             }
-            setIsVaporizing(false);
         };
-        vaporizeOut();
-    }, [text]);
 
-    useEffect(() => {
-        if (!isVaporizing) {
-            const vaporizeIn = async () => {
-                for (let i = 0; i <= text.length; i++) {
-                    await new Promise(resolve => setTimeout(resolve, 50));
-                    setDisplayedText(text.slice(0, i));
-                }
-            };
-            vaporizeIn();
-        }
-    }, [isVaporizing, text]);
+        const vaporizeIn = async () => {
+            for (let i = 0; i <= text.length; i++) {
+                if (!isMounted) return;
+                await new Promise(resolve => setTimeout(resolve, 50));
+                setDisplayedText(text.slice(0, i));
+            }
+        };
+
+        const animate = async () => {
+            await vaporizeOut();
+            // A brief pause before the next animation starts
+            await new Promise(resolve => setTimeout(resolve, 100));
+            if (isMounted) {
+                 // To ensure the new text is animated, we can clear it first
+                 setDisplayedText('');
+                 await new Promise(resolve => setTimeout(resolve, 50));
+                 vaporizeIn();
+            }
+        };
+        
+        // This effect will now trigger on each text change.
+        // It's a simplification that assumes the parent component controls the text prop updates.
+        vaporizeIn();
+
+
+        return () => {
+            isMounted = false;
+        };
+    }, [text]);
 
 
     return (
