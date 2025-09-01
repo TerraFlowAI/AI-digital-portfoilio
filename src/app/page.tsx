@@ -1,3 +1,4 @@
+
 import { HeroCard } from '@/components/portfolio/hero-card';
 import { SkillsCard } from '@/components/portfolio/skills-card';
 import { ExperienceCard } from '@/components/portfolio/experience-card';
@@ -7,6 +8,7 @@ import { ToolsCard } from '@/components/portfolio/tools-card';
 import { ContactFooter } from '@/components/portfolio/contact-footer';
 import { HeaderNav } from '@/components/portfolio/header-nav';
 import { AboutCard } from '@/components/portfolio/about-card';
+import { ContactSection } from '@/components/portfolio/contact-section';
 
 export default function Home({ params }: { params: { slug: string } }) {
   return (
@@ -114,6 +116,7 @@ export default function Home({ params }: { params: { slug: string } }) {
                 </div>
             </div>
           </section>
+          <ContactSection />
           <ContactFooter />
       </main>
     </>

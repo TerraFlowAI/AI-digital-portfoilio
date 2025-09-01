@@ -4,6 +4,7 @@
 import { useEffect, useRef } from 'react';
 import { HeaderNav } from '@/components/portfolio/header-nav';
 import { ContactFooter } from '@/components/portfolio/contact-footer';
+import { ContactSection } from '@/components/portfolio/contact-section';
 import Image from 'next/image';
 import {
   ArrowRight,
@@ -1001,6 +1002,7 @@ export default function AboutPage() {
             </div>
           </div>
         </section>
+        <ContactSection />
         <ContactFooter />
       </main>
     </div>
