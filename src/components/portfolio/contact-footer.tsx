@@ -6,7 +6,7 @@ interface ContactFooterProps {
   author?: string;
 }
 
-export function ContactFooter({ quote = '“The details are not the details.<br /> <span className="text-white/70">They make </span><span className="text-yellow-500">the </span><span className="text-orange-500">design.”</span>', author = '— Charles Eames' }: ContactFooterProps) {
+export function ContactFooter({ quote = '“The details are not the details.<br /> <span class="text-white/70">They make </span><span class="text-yellow-500">the </span><span class="text-orange-500">design.”</span>', author = '— Charles Eames' }: ContactFooterProps) {
     return (
         <section id="contact" className="max-w-7xl sm:px-6 sm:mt-24 border-t border-white/10 mt-16 mx-auto mb-16 pt-10 px-4">
        <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-neutral-950 text-white p-6 sm:p-8">
