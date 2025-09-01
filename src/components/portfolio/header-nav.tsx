@@ -13,7 +13,7 @@ export function HeaderNav() {
     { href: '#', label: 'Home' },
     { href: '#', label: 'Experience' },
     { href: '#', label: 'Projects' },
-    { href: '#', label: 'About' },
+    { href: '#about', label: 'About' },
     { href: '#', label: 'Contact' },
   ];
 
