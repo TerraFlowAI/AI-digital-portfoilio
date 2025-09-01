@@ -915,6 +915,6 @@ export default function AboutPage() {
         </section>
         <ContactFooter />
       </main>
-    
-
-</body></html>
+    </div>
+  );
+}
