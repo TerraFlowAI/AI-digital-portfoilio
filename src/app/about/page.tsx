@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect } from 'react';
@@ -30,7 +31,7 @@ import {
   Target,
   Activity,
   Calendar,
-  Timeline,
+  Milestone,
   Terminal,
 } from 'lucide-react';
 import { Chart } from 'chart.js/auto';
@@ -625,7 +626,7 @@ export default function AboutPage() {
             </div>
             <div className="bg-white/5 border-white/10 border rounded-2xl pt-4 pr-4 pb-4 pl-4">
               <div className="flex items-center gap-2">
-                <Timeline className="w-4 h-4 text-white/80" />
+                <Milestone className="w-4 h-4 text-white/80" />
                 <h3 className="text-xl font-semibold tracking-tight">
                   Timeline
                 </h3>
@@ -914,6 +915,6 @@ export default function AboutPage() {
         </section>
         <ContactFooter />
       </main>
-    </div>
-  );
-}
+    
+
+</body></html>
