@@ -23,14 +23,14 @@ export function HeaderNav() {
     <header className="fixed top-0 left-0 right-0 z-50 px-4">
       <nav className="mt-4 max-w-6xl mx-auto flex items-center justify-between rounded-full bg-white/10 backdrop-blur-lg border border-white/20 shadow-lg px-4 py-2">
         <Link href="/" className="inline-flex items-center gap-2">
-          <span className="sm:text-base text-sm font-semibold tracking-tight text-stone-800">
-            ALEX CHEN
+          <span className="sm:text-base text-sm font-semibold tracking-tight text-white">
+            SHAMANTH
           </span>
         </Link>
 
-        <div className="hidden md:flex items-center gap-6">
+        <div className="hidden md:flex items-center gap-1">
           {navLinks.map((link) => (
-            <Link key={link.href} href={link.href} className="text-sm text-stone-800 hover:text-stone-950 tracking-tight">
+            <Link key={link.href} href={link.href} className="text-sm text-stone-300 hover:text-white tracking-tight px-3 py-1.5 rounded-full transition-colors duration-300 hover:bg-white/10">
               {link.label}
             </Link>
           ))}
@@ -50,7 +50,7 @@ export function HeaderNav() {
                 data-menu-toggle=""
                 className="md:hidden inline-flex items-center justify-center rounded-full p-2 border border-stone-800/10 bg-white/20 hover:bg-white/30"
               >
-                <Menu className="w-4 h-4 text-stone-800" />
+                <Menu className="w-4 h-4 text-white" />
                 <span className="sr-only">Open menu</span>
               </button>
             </SheetTrigger>
@@ -61,7 +61,7 @@ export function HeaderNav() {
             >
               <div className="px-4 py-3 grid gap-2">
                 {navLinks.map((link) => (
-                  <Link key={link.href} href={link.href} className="text-sm text-stone-800 tracking-tight py-1.5">
+                  <Link key={link.href} href={link.href} className="text-sm text-stone-200 hover:text-white tracking-tight py-1.5">
                     {link.label}
                   </Link>
                 ))}
