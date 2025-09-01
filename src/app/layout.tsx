@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
   title: 'Digital Business Card',
-  description: 'Alex Chen - Senior Product Designer. Crafting intuitive digital experiences at the intersection of design and technology.',
+  description: 'Shamanth - Senior Product Designer. Crafting intuitive digital experiences at the intersection of design and technology.',
 };
 
 export default function RootLayout({

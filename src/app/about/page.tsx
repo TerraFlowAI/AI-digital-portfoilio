@@ -294,19 +294,7 @@ export default function AboutPage() {
                             }}
                             className="tracking-tighter"
                         >
-                            Maya
-                        </span>
-                        <span className="block"></span>
-                        <span
-                            data-letter
-                            style={{
-                            display: 'inline-block',
-                            transform: 'translateY(20px)',
-                            opacity: 0,
-                            }}
-                            className="tracking-tighter"
-                        >
-                            Chen
+                            Shamanth
                         </span>
                         </span>
                     </h1>
@@ -324,11 +312,11 @@ export default function AboutPage() {
                         <span>View Work</span>
                         </a>
                         <a
-                        href="mailto:hello@mayachen.dev"
+                        href="mailto:hello@shamanth.dev"
                         className="inline-flex items-center justify-center gap-2 hover:bg-white/15 text-sm font-medium text-white tracking-tight bg-white/10 border-white/10 border rounded-full pt-3 pr-5 pb-3 pl-5 shadow-sm backdrop-blur"
                         >
                         <Mail className="w-4 h-4" />
-                        <span className="">hello@mayachen.dev</span>
+                        <span className="">hello@shamanth.dev</span>
                         </a>
                     </div>
                     <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl">
@@ -370,7 +358,7 @@ export default function AboutPage() {
                 <div className="relative w-full h-[520px] z-10">
                     <Image
                         src="https://res.cloudinary.com/dvic0tda9/image/upload/v1756748658/Generated_Image_September_01_2025_-_11_12PM_nxycgm_e_improve_e_sharpen_qoepnc.jpg"
-                        alt="Maya Chen"
+                        alt="Shamanth"
                         width={600}
                         height={800}
                         className="rounded-3xl object-cover object-top w-full h-full"

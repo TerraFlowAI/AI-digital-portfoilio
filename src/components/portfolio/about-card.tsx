@@ -9,7 +9,7 @@ export function AboutCard() {
                 </div>
                 <h3 className="text-xl font-semibold text-white mb-2">Who I Am</h3>
                 <p className="text-stone-400 text-sm">
-                    I'm Alex Chen, a Senior Product Designer with a passion for creating intuitive and beautiful user experiences. I thrive at the intersection of design and technology.
+                    I'm Shamanth, a Senior Product Designer with a passion for creating intuitive and beautiful user experiences. I thrive at the intersection of design and technology.
                 </p>
             </div>
             <div className="bg-stone-800 border border-stone-700 rounded-2xl p-6 flex flex-col items-center text-center hover:border-orange-500 transition-colors duration-300">

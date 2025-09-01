@@ -17,9 +17,9 @@ export function ContactFooter() {
             <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 md:divide-x md:divide-white/10">
              <div className="">
                <p className="text-sm text-white/70">Email</p>
-               <a href="mailto:hello@mayachen.dev" className="mt-2 inline-flex items-center gap-3 text-xl sm:text-2xl font-medium tracking-tight">
+               <a href="mailto:hello@shamanth.dev" className="mt-2 inline-flex items-center gap-3 text-xl sm:text-2xl font-medium tracking-tight">
                  <Mail className="w-5 h-5" />
-                 <span className="break-all">hello@mayachen.dev</span>
+                 <span className="break-all">hello@shamanth.dev</span>
                </a>
              </div>
              <div className="md:pl-8">
@@ -47,7 +47,7 @@ export function ContactFooter() {
                </div>
              </div>
            </div>
-            <p className="text-[11px] text-white/60 text-center mt-6">© Alex Chen — Available for freelance &amp; contracts<span id="year">2025</span></p>
+            <p className="text-[11px] text-white/60 text-center mt-6">© Shamanth — Available for freelance &amp; contracts<span id="year">2025</span></p>
          </div>
        </div>
      </section>
