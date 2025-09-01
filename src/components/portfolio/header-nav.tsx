@@ -12,7 +12,7 @@ export function HeaderNav() {
   const navLinks = [
     { href: '#', label: 'Home' },
     { href: '#experience', label: 'Experience' },
-    { href: '#', label: 'Projects' },
+    { href: '#projects', label: 'Projects' },
     { href: '#about', label: 'About' },
     { href: '#', label: 'Contact' },
   ];

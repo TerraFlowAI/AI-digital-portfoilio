@@ -72,6 +72,51 @@ export default function Home() {
                 </div>
             </div>
           </section>
+          <section id="projects" className="md:p-8 bg-stone-900 border-stone-800 border rounded-[40px] pt-4 pr-4 pb-4 pl-2 shadow-[0_2.8px_2.2px_rgba(0,_0,_0,_0.034),_0_6.7px_5.3px_rgba(0,_0,_0,_0.048),_0_12.5px_10px_rgba(0,_0,_0,_0.06),_0_22.3px_17.9px_rgba(0,_0,_0,_0.072),_0_41.8px_33.4px_rgba(0,_0,_0,_0.086),_0_100px_80px_rgba(0,_0,_0,_0.12)] mt-12">
+            <h2 className="text-3xl font-bold text-white mb-6 px-2 md:px-0">Projects</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-stone-800 border border-stone-700 rounded-2xl p-6 hover:border-orange-500 transition-colors duration-300">
+                    <div className="flex justify-between items-start mb-4">
+                        <span className="text-sm font-semibold text-orange-400">VR Wellness App</span>
+                        <span className="text-sm text-stone-400">2023</span>
+                    </div>
+                    <h3 className="text-xl font-semibold text-white mb-2">Mindful Journeys</h3>
+                    <p className="text-stone-400 text-sm">
+                        A virtual reality experience designed to promote mental well-being through guided meditations and immersive, calming environments. Led the design from concept to a successful launch on the Meta Quest Store.
+                    </p>
+                </div>
+                <div className="bg-stone-800 border border-stone-700 rounded-2xl p-6 hover:border-orange-500 transition-colors duration-300">
+                    <div className="flex justify-between items-start mb-4">
+                        <span className="text-sm font-semibold text-orange-400">Mobile E-commerce App</span>
+                        <span className="text-sm text-stone-400">2021</span>
+                    </div>
+                    <h3 className="text-xl font-semibold text-white mb-2">Artisan Direct</h3>
+                    <p className="text-stone-400 text-sm">
+                        A mobile platform connecting artisans with a global market. I designed the entire user flow, from browsing and discovery to a seamless and secure checkout process, resulting in a 20% increase in artist revenue.
+                    </p>
+                </div>
+                 <div className="bg-stone-800 border border-stone-700 rounded-2xl p-6 hover:border-orange-500 transition-colors duration-300">
+                    <div className="flex justify-between items-start mb-4">
+                        <span className="text-sm font-semibold text-orange-400">Design System</span>
+                        <span className="text-sm text-stone-400">2020</span>
+                    </div>
+                    <h3 className="text-xl font-semibold text-white mb-2">Nebula Design System</h3>
+                    <p className="text-stone-400 text-sm">
+                        As a core contributor to Google's Material Design, I helped develop and document a new component library that is now used by over 100 internal product teams, ensuring brand consistency and accelerating development.
+                    </p>
+                </div>
+                 <div className="bg-stone-800 border border-stone-700 rounded-2xl p-6 hover:border-orange-500 transition-colors duration-300">
+                    <div className="flex justify-between items-start mb-4">
+                        <span className="text-sm font-semibold text-orange-400">Interactive Web Experience</span>
+                        <span className="text-sm text-stone-400">2018</span>
+                    </div>
+                    <h3 className="text-xl font-semibold text-white mb-2">Airbnb City Guides</h3>
+                    <p className="text-stone-400 text-sm">
+                       An interactive web feature that provides travelers with personalized city guides based on their interests and booking history. The project was featured in several design publications for its innovative approach to content discovery.
+                    </p>
+                </div>
+            </div>
+          </section>
           <ContactFooter />
       </main>
     </>
