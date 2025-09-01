@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { HeaderNav } from '@/components/portfolio/header-nav';
 import { ContactFooter } from '@/components/portfolio/contact-footer';
 import Image from 'next/image';
@@ -35,7 +35,141 @@ import {
 } from 'lucide-react';
 import { Chart } from 'chart.js/auto';
 import * as THREE from 'three';
-import { EtherealShadow } from '@/components/ui/etheral-shadow';
+
+const CausticShader = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !containerRef.current) return;
+
+    // Scene setup
+    const scene = new THREE.Scene();
+    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+    const renderer = new THREE.WebGLRenderer();
+    containerRef.current.appendChild(renderer.domElement);
+
+    // Shader material
+    const vertexShader = `
+      void main() {
+        gl_Position = vec4(position, 1.0);
+      }
+    `;
+
+    const fragmentShader = `
+      uniform float iTime;
+      uniform vec2 iResolution;
+      vec4 mod289(vec4 x) { return x - floor(x / 289.0) * 289.0; }
+      vec4 permute(vec4 x) { return mod289((x * 34.0 + 1.0) * x); }
+      vec4 snoise(vec3 v) {
+          const vec2 C = vec2(1.0 / 6.0, 1.0 / 3.0);
+          vec3 i  = floor(v + dot(v, vec3(C.y)));
+          vec3 x0 = v   - i + dot(i, vec3(C.x));
+          vec3 g = step(x0.yzx, x0.xyz);
+          vec3 l = 1.0 - g;
+          vec3 i1 = min(g.xyz, l.zxy);
+          vec3 i2 = max(g.xyz, l.zxy);
+          vec3 x1 = x0 - i1 + C.x;
+          vec3 x2 = x0 - i2 + C.y;
+          vec3 x3 = x0 - 0.5;
+          vec4 p = permute(permute(permute(i.z + vec4(0.0, i1.z, i2.z, 1.0))
+                                  + i.y + vec4(0.0, i1.y, i2.y, 1.0))
+                                  + i.x + vec4(0.0, i1.x, i2.x, 1.0));
+          vec4 j = p - 49.0 * floor(p / 49.0);
+          vec4 x_ = floor(j / 7.0);
+          vec4 y_ = floor(j - 7.0 * x_); 
+          vec4 x = (x_ * 2.0 + 0.5) / 7.0 - 1.0;
+          vec4 y = (y_ * 2.0 + 0.5) / 7.0 - 1.0;
+          vec4 h = 1.0 - abs(x) - abs(y);
+          vec4 b0 = vec4(x.xy, y.xy);
+          vec4 b1 = vec4(x.zw, y.zw);
+          vec4 s0 = floor(b0) * 2.0 + 1.0;
+          vec4 s1 = floor(b1) * 2.0 + 1.0;
+          vec4 sh = -step(h, vec4(0.0));
+          vec4 a0 = b0.xzyw + s0.xzyw * sh.xxyy;
+          vec4 a1 = b1.xzyw + s1.xzyw * sh.zzww;
+          vec3 g0 = vec3(a0.xy, h.x);
+          vec3 g1 = vec3(a0.zw, h.y);
+          vec3 g2 = vec3(a1.xy, h.z);
+          vec3 g3 = vec3(a1.zw, h.w);
+          vec4 m = max(0.6 - vec4(dot(x0, x0), dot(x1, x1), dot(x2, x2), dot(x3, x3)), 0.0);
+          vec4 m2 = m * m;
+          vec4 m3 = m2 * m;
+          vec4 m4 = m2 * m2;
+          vec3 grad =
+            -6.0 * m3.x * x0 * dot(x0, g0) + m4.x * g0 +
+            -6.0 * m3.y * x1 * dot(x1, g1) + m4.y * g1 +
+            -6.0 * m3.z * x2 * dot(x2, g2) + m4.z * g2 +
+            -6.0 * m3.w * x3 * dot(x3, g3) + m4.w * g3;
+          vec4 px = vec4(dot(x0, g0), dot(x1, g1), dot(x2, g2), dot(x3, g3));
+          return 42.0 * vec4(grad, dot(m4, px));
+      }
+      void main() {
+          vec2 fragCoord = gl_FragCoord.xy;
+          vec2 p = (-iResolution.xy + 2.0*fragCoord) / iResolution.y;
+          vec3 ww = normalize(-vec3(0., 1., 1.));
+          vec3 uu = normalize(cross(ww, vec3(0., 1., 0.)));
+          vec3 vv = normalize(cross(uu,ww));
+          vec3 rd = p.x*uu + p.y*vv + 1.5*ww;
+          vec3 pos = -ww + rd*(ww.y/rd.y);
+          pos.y = iTime*0.3;
+          pos *= 3.;
+          vec4 n = snoise( pos );
+          pos -= 0.07*n.xyz;
+          n = snoise( pos );
+          pos -= 0.07*n.xyz;
+          n = snoise( pos );
+          float intensity = exp(n.w*3. - 1.5);
+          vec3 color = vec3(intensity);
+          color.b += intensity * 0.3;
+          color.g += intensity * 0.1;
+          gl_FragColor = vec4(color, 1.);
+      }
+    `;
+
+    const material = new THREE.ShaderMaterial({
+        vertexShader,
+        fragmentShader,
+        uniforms: {
+            iTime: { value: 0 },
+            iResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
+        }
+    });
+
+    const geometry = new THREE.PlaneGeometry(2, 2);
+    const mesh = new THREE.Mesh(geometry, material);
+    scene.add(mesh);
+
+    let animationFrameId: number;
+
+    const animate = () => {
+        material.uniforms.iTime.value += 0.003;
+        renderer.render(scene, camera);
+        animationFrameId = requestAnimationFrame(animate);
+    };
+
+    const handleResize = () => {
+        const { clientWidth, clientHeight } = containerRef.current!;
+        renderer.setSize(clientWidth, clientHeight);
+        material.uniforms.iResolution.value.set(clientWidth, clientHeight);
+    };
+    
+    handleResize();
+    animate();
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      cancelAnimationFrame(animationFrameId);
+      if (containerRef.current) {
+        containerRef.current.removeChild(renderer.domElement);
+      }
+    };
+  }, []);
+
+  return <div ref={containerRef} className="absolute inset-0 w-full h-full" />;
+};
+
 
 export default function AboutPage() {
   useEffect(() => {
@@ -141,99 +275,102 @@ export default function AboutPage() {
     <div className="antialiased selection:bg-white selection:text-neutral-900 text-white/90 bg-neutral-950 font-body">
       <HeaderNav />
       <main>
-        <section className="relative h-screen">
-          <EtherealShadow
-            color="rgba(128, 128, 128, 1)"
-            animation={{ scale: 100, speed: 90 }}
-            noise={{ opacity: 1, scale: 1.2 }}
-            sizing="fill"
-          >
-            <div className="lg:col-span-7 z-10 text-center">
-              <h1 className="leading-none text-white tracking-tight">
-                <span className="block text-[12vw] sm:text-[10vw] md:text-[8vw] lg:text-[7vw] font-semibold">
-                  <span
-                    data-letter
-                    style={{
-                      display: 'inline-block',
-                      transform: 'translateY(20px)',
-                      opacity: 0,
-                    }}
-                    className="tracking-tighter"
-                  >
-                    Maya
-                  </span>
-                  <span className="block"></span>
-                  <span
-                    data-letter
-                    style={{
-                      display: 'inline-block',
-                      transform: 'translateY(20px)',
-                      opacity: 0,
-                    }}
-                    className="tracking-tighter"
-                  >
-                    Chen
-                  </span>
-                </span>
-              </h1>
-              <p className="sm:mt-5 sm:text-3xl leading-relaxed max-w-2xl text-base text-white/70 tracking-tight mt-4 mx-auto">
-                AI Engineer &amp; Frontend — shipping agentic systems, RAG
-                pipelines, and developer UX. I blend product intuition with
-                systems engineering to build fast, reliable LLM apps.
-              </p>
-              <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
-                <a
-                  href="#work"
-                  className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-medium tracking-tight text-neutral-900 bg-white hover:bg-white/90 border border-white/10"
-                >
-                  <ArrowRight className="w-4 h-4" />
-                  <span>View Work</span>
-                </a>
-                <a
-                  href="mailto:hello@mayachen.dev"
-                  className="inline-flex items-center justify-center gap-2 hover:bg-white/15 text-sm font-medium text-white tracking-tight bg-white/10 border-white/10 border rounded-full pt-3 pr-5 pb-3 pl-5 shadow-sm backdrop-blur"
-                >
-                  <Mail className="w-4 h-4" />
-                  <span className="">hello@mayachen.dev</span>
-                </a>
-              </div>
-              <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl mx-auto">
-                <div className="flex items-start gap-3 border-t border-white/10 pt-4">
-                  <MapPin className="w-[18px] h-[18px] text-white/50 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium tracking-tight">
-                      Based in San Francisco
+        <section className="relative h-screen flex items-center">
+          <div className="absolute inset-0 w-full h-full">
+             <CausticShader />
+          </div>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 w-full">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                <div className="text-white z-10">
+                    <h1 className="leading-none text-white tracking-tight">
+                        <span className="block text-[12vw] sm:text-[10vw] md:text-[8vw] lg:text-[7vw] font-semibold">
+                        <span
+                            data-letter
+                            style={{
+                            display: 'inline-block',
+                            transform: 'translateY(20px)',
+                            opacity: 0,
+                            }}
+                            className="tracking-tighter"
+                        >
+                            Maya
+                        </span>
+                        <span className="block"></span>
+                        <span
+                            data-letter
+                            style={{
+                            display: 'inline-block',
+                            transform: 'translateY(20px)',
+                            opacity: 0,
+                            }}
+                            className="tracking-tighter"
+                        >
+                            Chen
+                        </span>
+                        </span>
+                    </h1>
+                    <p className="sm:mt-5 sm:text-3xl leading-relaxed max-w-2xl text-base text-white/70 tracking-tight mt-4">
+                        AI Engineer &amp; Frontend — shipping agentic systems, RAG
+                        pipelines, and developer UX. I blend product intuition with
+                        systems engineering to build fast, reliable LLM apps.
                     </p>
-                    <p className="text-xs text-white/60 mt-0.5">
-                      Open to remote work
-                    </p>
-                  </div>
+                    <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                        <a
+                        href="#work"
+                        className="inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-medium tracking-tight text-neutral-900 bg-white hover:bg-white/90 border border-white/10"
+                        >
+                        <ArrowRight className="w-4 h-4" />
+                        <span>View Work</span>
+                        </a>
+                        <a
+                        href="mailto:hello@mayachen.dev"
+                        className="inline-flex items-center justify-center gap-2 hover:bg-white/15 text-sm font-medium text-white tracking-tight bg-white/10 border-white/10 border rounded-full pt-3 pr-5 pb-3 pl-5 shadow-sm backdrop-blur"
+                        >
+                        <Mail className="w-4 h-4" />
+                        <span className="">hello@mayachen.dev</span>
+                        </a>
+                    </div>
+                    <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl">
+                        <div className="flex items-start gap-3 border-t border-white/10 pt-4">
+                        <MapPin className="w-[18px] h-[18px] text-white/50 mt-0.5" />
+                        <div>
+                            <p className="text-sm font-medium tracking-tight">
+                            Based in San Francisco
+                            </p>
+                            <p className="text-xs text-white/60 mt-0.5">
+                            Open to remote work
+                            </p>
+                        </div>
+                        </div>
+                        <div className="flex items-start gap-3 border-t border-white/10 pt-4">
+                        <Cpu className="w-[18px] h-[18px] text-white/50 mt-0.5" />
+                        <div>
+                            <p className="text-sm font-medium tracking-tight">
+                            AI Systems + Frontend
+                            </p>
+                            <p className="text-xs text-white/60 mt-0.5">
+                            RAG, agents, benchmarks
+                            </p>
+                        </div>
+                        </div>
+                        <div className="flex items-start gap-3 border-t border-white/10 pt-4">
+                        <Check className="w-[18px] h-[18px] text-white/50 mt-0.5" />
+                        <div>
+                            <p className="text-sm font-medium tracking-tight">
+                            Currently available
+                            </p>
+                            <p className="text-xs text-white/60 mt-0.5">
+                            Starting mid‑September
+                            </p>
+                        </div>
+                        </div>
+                    </div>
                 </div>
-                <div className="flex items-start gap-3 border-t border-white/10 pt-4">
-                  <Cpu className="w-[18px] h-[18px] text-white/50 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium tracking-tight">
-                      AI Systems + Frontend
-                    </p>
-                    <p className="text-xs text-white/60 mt-0.5">
-                      RAG, agents, benchmarks
-                    </p>
-                  </div>
+                <div className="relative w-full h-96 md:h-full">
+                    {/* Placeholder for the right container, it will be covered by the full-screen shader */}
                 </div>
-                <div className="flex items-start gap-3 border-t border-white/10 pt-4">
-                  <Check className="w-[18px] h-[18px] text-white/50 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium tracking-tight">
-                      Currently available
-                    </p>
-                    <p className="text-xs text-white/60 mt-0.5">
-                      Starting mid‑September
-                    </p>
-                  </div>
-                </div>
-              </div>
             </div>
-          </EtherealShadow>
+          </div>
         </section>
 
         <section
@@ -565,9 +702,9 @@ export default function AboutPage() {
                   dangerouslySetInnerHTML={{
                     __html: `<span style="color: #ff7b72;">from</span> <span style="color: #79c0ff;">fastapi</span> <span style="color: #ff7b72;" class="">import</span> <span style="color: #79c0ff;">FastAPI</span>
 <span style="color: #ff7b72;">from</span> <span style="color: #79c0ff;" class="">rag</span> <span style="color: #ff7b72;">import</span> <span style="color: #79c0ff;">embed</span>, <span style="color: #79c0ff;" class="">search</span>, <span style="color: #79c0ff;">rerank</span>, <span style="color: #79c0ff;">answer</span>
-<span style="color: #ff7b72;">from</span> <span style="color: #79c0ff;">tracers</span> <span style="color: #ff7b72;" class="">import</span> <span style="color: #79c0ff;" class="">trace</span>
+<span style="color: #ff7b72;">from</span> <span style="color: #79c_of_vfs;">tracers</span> <span style="color: #ff7b72;" class="">import</span> <span style="color: #79c_of_vfs;" class="">trace</span>
 
-<span style="color: #ffa657;">app</span> = <span style="color: #79c0ff;">FastAPI</span>()
+<span style="color: #ffa657;">app</span> = <span style="color: #79c_of_vfs;">FastAPI</span>()
 
 <span style="color: #a5a5a5;">@</span><span style="color: #ffa657;" class="">app</span>.<span style="color: #d2a8ff;" class="">post</span>(<span style="color: #a5d6ff;" class="">"/ask"</span>)
 <span style="color: #a5a5a5;">@</span><span style="color: #d2a8ff;">trace</span>(<span style="color: #a5d6ff;">"ask"</span>)
