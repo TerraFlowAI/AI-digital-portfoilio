@@ -7,14 +7,15 @@ import {
   SheetContent,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import Link from 'next/link';
 
 export function HeaderNav() {
   const navLinks = [
-    { href: '#', label: 'Home' },
-    { href: '#experience', label: 'Experience' },
-    { href: '#projects', label: 'Projects' },
-    { href: '#about', label: 'About' },
-    { href: '#', label: 'Contact' },
+    { href: '/', label: 'Home' },
+    { href: '/#experience', label: 'Experience' },
+    { href: '/#projects', label: 'Projects' },
+    { href: '/about', label: 'About' },
+    { href: '/#contact', label: 'Contact' },
   ];
 
   return (
@@ -22,20 +23,20 @@ export function HeaderNav() {
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between rounded-full bg-black/20 border border-stone-700/50 backdrop-blur-lg shadow-lg px-4 py-2 text-white">
           <div className="flex items-center">
-            <a href="#" className="text-lg font-bold tracking-tight">
+            <Link href="/" className="text-lg font-bold tracking-tight">
               ALEX CHEN
-            </a>
+            </Link>
           </div>
 
           <nav className="hidden md:flex items-center gap-2">
             {navLinks.map((link) => (
-              <a
+              <Link
                 key={link.label}
                 href={link.href}
                 className="px-3 py-2 text-sm font-medium text-stone-300 hover:text-white transition-colors duration-200"
               >
                 {link.label}
-              </a>
+              </Link>
             ))}
           </nav>
 
@@ -54,13 +55,13 @@ export function HeaderNav() {
                   <div className="flex flex-col items-center justify-center h-full">
                     <nav className="flex flex-col items-center gap-6">
                       {navLinks.map((link) => (
-                        <a
+                        <Link
                           key={link.label}
                           href={link.href}
                           className="px-4 py-2 text-lg font-medium text-stone-300 hover:text-orange-400 transition-colors duration-200"
                         >
                           {link.label}
-                        </a>
+                        </Link>
                       ))}
                     </nav>
                      <Button asChild className="mt-8 w-full rounded-full bg-orange-500 hover:bg-orange-600 text-white shadow-md transition-all hover:scale-105">

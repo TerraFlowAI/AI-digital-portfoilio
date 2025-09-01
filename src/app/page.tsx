@@ -23,10 +23,7 @@ export default function Home() {
                   <ToolsCard />
               </div>
           </section>
-          <section id="about" className="md:p-8 bg-stone-900 border-stone-800 border rounded-[40px] pt-4 pr-4 pb-4 pl-2 shadow-[0_2.8px_2.2px_rgba(0,_0,_0,_0.034),_0_6.7px_5.3px_rgba(0,_0,_0,_0.048),_0_12.5px_10px_rgba(0,_0,_0,_0.06),_0_22.3px_17.9px_rgba(0,_0,_0,_0.072),_0_41.8px_33.4px_rgba(0,_0,_0,_0.086),_0_100px_80px_rgba(0,_0,_0,_0.12)] mt-12">
-            <h2 className="text-3xl font-bold text-white mb-6 px-2 md:px-0">About Me</h2>
-            <AboutCard />
-          </section>
+          
           <section id="experience" className="md:p-8 bg-stone-900 border-stone-800 border rounded-[40px] pt-4 pr-4 pb-4 pl-2 shadow-[0_2.8px_2.2px_rgba(0,_0,_0,_0.034),_0_6.7px_5.3px_rgba(0,_0,_0,_0.048),_0_12.5px_10px_rgba(0,_0,_0,_0.06),_0_22.3px_17.9px_rgba(0,_0,_0,_0.072),_0_41.8px_33.4px_rgba(0,_0,_0,_0.086),_0_100px_80px_rgba(0,_0,_0,_0.12)] mt-12">
             <h2 className="text-3xl font-bold text-white mb-6 px-2 md:px-0">Experience</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
