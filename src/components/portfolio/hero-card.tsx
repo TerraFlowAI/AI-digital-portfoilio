@@ -12,41 +12,37 @@ const titles = [
 
 const VaporText = ({ text }: { text: string }) => {
     const [displayedText, setDisplayedText] = useState('');
+    const [isAnimating, setIsAnimating] = useState(false);
 
     useEffect(() => {
         let isMounted = true;
-        const vaporizeOut = async () => {
+
+        const animateText = async () => {
+            if (isAnimating) return;
+            setIsAnimating(true);
+
+            // Vaporize out
             for (let i = text.length; i >= 0; i--) {
                 if (!isMounted) return;
-                await new Promise(resolve => setTimeout(resolve, 30));
                 setDisplayedText(text.slice(0, i));
+                await new Promise(resolve => setTimeout(resolve, 30));
             }
-        };
 
-        const vaporizeIn = async () => {
+            // A brief pause
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            // Vaporize in with new text (which will be passed as a prop)
             for (let i = 0; i <= text.length; i++) {
                 if (!isMounted) return;
-                await new Promise(resolve => setTimeout(resolve, 50));
                 setDisplayedText(text.slice(0, i));
+                await new Promise(resolve => setTimeout(resolve, 50));
+            }
+            if(isMounted) {
+                setIsAnimating(false);
             }
         };
 
-        const animate = async () => {
-            await vaporizeOut();
-            // A brief pause before the next animation starts
-            await new Promise(resolve => setTimeout(resolve, 100));
-            if (isMounted) {
-                 // To ensure the new text is animated, we can clear it first
-                 setDisplayedText('');
-                 await new Promise(resolve => setTimeout(resolve, 50));
-                 vaporizeIn();
-            }
-        };
-        
-        // This effect will now trigger on each text change.
-        // It's a simplification that assumes the parent component controls the text prop updates.
-        vaporizeIn();
-
+        animateText();
 
         return () => {
             isMounted = false;
@@ -75,7 +71,7 @@ export function HeroCard() {
     }, []);
 
     return (
-        <article className="relative col-span-1 row-span-2 overflow-hidden md:col-span-2 group hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 bg-[url(https://hoirqrkdgbmvpwutwuwj.supabase.co/storage/v1/object/public/assets/assets/c60c653a-1c73-431a-8619-861a312cc7db_1600w.jpg)] bg-cover rounded-2xl">
+        <article className="relative col-span-1 row-span-2 overflow-hidden md:col-span-2 group hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 bg-[url(https://res.cloudinary.com/dvic0tda9/image/upload/v1756747495/Generated_Image_September_01_2025_-_9_40PM_snk73b_c_crop_ar_3_4_e_improve_e_sharpen_bjvjrd.jpg)] bg-cover rounded-2xl">
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
             <div className="absolute inset-0 flex flex-col md:p-10 p-6 justify-between">
                 <div className="flex items-start justify-between">
