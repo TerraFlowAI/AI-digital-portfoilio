@@ -148,7 +148,8 @@ const CausticShader = () => {
     };
 
     const handleResize = () => {
-        const { clientWidth, clientHeight } = containerRef.current!;
+        if (!containerRef.current) return;
+        const { clientWidth, clientHeight } = containerRef.current;
         renderer.setSize(clientWidth, clientHeight);
         material.uniforms.iResolution.value.set(clientWidth, clientHeight);
     };
@@ -366,7 +367,7 @@ export default function AboutPage() {
                         </div>
                     </div>
                 </div>
-                <div className="relative w-full h-[520px] md:h-full z-10">
+                <div className="relative w-full h-[480px] z-10">
                     <Image
                         src="https://res.cloudinary.com/dvic0tda9/image/upload/v1756748658/Generated_Image_September_01_2025_-_11_12PM_nxycgm_e_improve_e_sharpen_qoepnc.jpg"
                         alt="Maya Chen"
