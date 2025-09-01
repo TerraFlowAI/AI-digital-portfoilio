@@ -36,7 +36,7 @@ import {
 } from 'lucide-react';
 import { Chart } from 'chart.js/auto';
 
-export default function AboutPage() {
+export default function AboutPage({ params }: { params: { slug: string } }) {
   useEffect(() => {
     // Mobile menu toggle
     const btn = document.querySelector('[data-menu-toggle]');

@@ -8,7 +8,7 @@ import { ContactFooter } from '@/components/portfolio/contact-footer';
 import { HeaderNav } from '@/components/portfolio/header-nav';
 import { AboutCard } from '@/components/portfolio/about-card';
 
-export default function Home() {
+export default function Home({ params }: { params: { slug: string } }) {
   return (
     <>
       <HeaderNav />
