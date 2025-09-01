@@ -12,10 +12,18 @@ import { ContactSection } from '@/components/portfolio/contact-section';
 
 export default function Home({ params }: { params: { slug: string } }) {
   return (
-    <>
+    <div 
+      style={{
+        backgroundImage: `url('https://res.cloudinary.com/dvic0tda9/image/upload/v1756751788/Whisk_8e33301f98_df7sn7.jpg')`,
+        backgroundAttachment: 'fixed',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      }}
+    >
       <HeaderNav />
       <main className="max-w-7xl lg:px-8 mx-auto px-4 pt-24 pb-12 sm:pt-32 sm:pb-20">
-          <section className="md:p-8 bg-stone-900 border-stone-800 border rounded-[40px] pt-4 pr-4 pb-4 pl-2 shadow-[0_2.8px_2.2px_rgba(0,_0,_0,_0.034),_0_6.7px_5.3px_rgba(0,_0,_0,_0.048),_0_12.5px_10px_rgba(0,_0,_0,_0.06),_0_22.3px_17.9px_rgba(0,_0,_0,_0.072),_0_41.8px_33.4px_rgba(0,_0,_0,_0.086),_0_100px_80px_rgba(0,_0,_0,_0.12)]">
+          <section className="md:p-8 bg-stone-900/80 backdrop-blur-sm border-stone-800 border rounded-[40px] pt-4 pr-4 pb-4 pl-2 shadow-[0_2.8px_2.2px_rgba(0,_0,_0,_0.034),_0_6.7px_5.3px_rgba(0,_0,_0,_0.048),_0_12.5px_10px_rgba(0,_0,_0,_0.06),_0_22.3px_17.9px_rgba(0,_0,_0,_0.072),_0_41.8px_33.4px_rgba(0,_0,_0,_0.086),_0_100px_80px_rgba(0,_0,_0,_0.12)]">
               <div className="grid auto-rows-[240px] gap-4 md:auto-rows-[300px] lg:auto-rows-[360px] md:grid-cols-3">
                   <HeroCard />
                   <SkillsCard />
@@ -26,7 +34,7 @@ export default function Home({ params }: { params: { slug: string } }) {
               </div>
           </section>
           
-          <section id="experience" className="md:p-8 bg-stone-900 border-stone-800 border rounded-[40px] pt-4 pr-4 pb-4 pl-2 shadow-[0_2.8px_2.2px_rgba(0,_0,_0,_0.034),_0_6.7px_5.3px_rgba(0,_0,_0,_0.048),_0_12.5px_10px_rgba(0,_0,_0,_0.06),_0_22.3px_17.9px_rgba(0,_0,_0,_0.072),_0_41.8px_33.4px_rgba(0,_0,_0,_0.086),_0_100px_80px_rgba(0,_0,_0,_0.12)] mt-12">
+          <section id="experience" className="md:p-8 bg-stone-900/80 backdrop-blur-sm border-stone-800 border rounded-[40px] pt-4 pr-4 pb-4 pl-2 shadow-[0_2.8px_2.2px_rgba(0,_0,_0,_0.034),_0_6.7px_5.3px_rgba(0,_0,_0,_0.048),_0_12.5px_10px_rgba(0,_0,_0,_0.06),_0_22.3px_17.9px_rgba(0,_0,_0,_0.072),_0_41.8px_33.4px_rgba(0,_0,_0,_0.086),_0_100px_80px_rgba(0,_0,_0,_0.12)] mt-12">
             <h2 className="text-3xl font-bold text-white mb-6 px-2 md:px-0">Experience</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-stone-800 border border-stone-700 rounded-2xl p-6 hover:border-orange-500 transition-colors duration-300">
@@ -71,7 +79,7 @@ export default function Home({ params }: { params: { slug: string } }) {
                 </div>
             </div>
           </section>
-          <section id="projects" className="md:p-8 bg-stone-900 border-stone-800 border rounded-[40px] pt-4 pr-4 pb-4 pl-2 shadow-[0_2.8px_2.2px_rgba(0,_0,_0,_0.034),_0_6.7px_5.3px_rgba(0,_0,_0,_0.048),_0_12.5px_10px_rgba(0,_0,_0,_0.06),_0_22.3px_17.9px_rgba(0,_0,_0,_0.072),_0_41.8px_33.4px_rgba(0,_0,_0,_0.086),_0_100px_80px_rgba(0,_0,_0,_0.12)] mt-12">
+          <section id="projects" className="md:p-8 bg-stone-900/80 backdrop-blur-sm border-stone-800 border rounded-[40px] pt-4 pr-4 pb-4 pl-2 shadow-[0_2.8px_2.2px_rgba(0,_0,_0,_0.034),_0_6.7px_5.3px_rgba(0,_0,_0,_0.048),_0_12.5px_10px_rgba(0,_0,_0,_0.06),_0_22.3px_17.9px_rgba(0,_0,_0,_0.072),_0_41.8px_33.4px_rgba(0,_0,_0,_0.086),_0_100px_80px_rgba(0,_0,_0,_0.12)] mt-12">
             <h2 className="text-3xl font-bold text-white mb-6 px-2 md:px-0">Projects</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-stone-800 border border-stone-700 rounded-2xl p-6 hover:border-orange-500 transition-colors duration-300">
@@ -119,6 +127,6 @@ export default function Home({ params }: { params: { slug: string } }) {
           <ContactSection />
           <ContactFooter />
       </main>
-    </>
+    </div>
   );
 }
