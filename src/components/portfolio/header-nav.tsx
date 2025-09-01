@@ -11,7 +11,7 @@ import {
 export function HeaderNav() {
   const navLinks = [
     { href: '#', label: 'Home' },
-    { href: '#', label: 'Experience' },
+    { href: '#experience', label: 'Experience' },
     { href: '#', label: 'Projects' },
     { href: '#about', label: 'About' },
     { href: '#', label: 'Contact' },
