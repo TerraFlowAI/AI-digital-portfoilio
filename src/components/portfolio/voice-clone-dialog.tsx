@@ -64,7 +64,10 @@ export function VoiceCloneDialog() {
 
           if (audioRef.current) {
             audioRef.current.src = audioResponse.media;
-            audioRef.current.play();
+            audioRef.current.play().catch(e => {
+                console.error("Error playing audio:", e);
+                setIsPlaying(false);
+            });
             setIsPlaying(true);
           }
         } catch (error) {
