@@ -7,9 +7,9 @@ export const RiveOrb = () => {
   return (
     <div className="w-24 h-24">
       <Rive
-        src="https://public.rive.app/community/runtime-files/2156-4299-orb.riv"
+        src="/orb.riv"
         stateMachines="State Machine 1"
-        autoPlay
+        autoPlay={true}
       />
     </div>
   );
