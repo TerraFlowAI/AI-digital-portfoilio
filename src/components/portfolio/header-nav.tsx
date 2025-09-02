@@ -2,7 +2,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Menu, Download } from 'lucide-react';
+import { Menu, Download, Bot } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -66,6 +66,7 @@ export function HeaderNav() {
     { href: '/#experience', label: 'Experience' },
     { href: '/#projects', label: 'Projects' },
     { href: '/about', label: 'About' },
+    { href: '/voice-clone', label: 'Voice Clone'},
     { href: '/#contact', label: 'Contact' },
   ];
 
@@ -130,3 +131,4 @@ export function HeaderNav() {
     </header>
   );
 }
+
