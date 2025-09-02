@@ -20,7 +20,7 @@ export default function Home({ params }: { params: { slug: string } }) {
         playsInline 
         className="fixed top-0 left-0 w-full h-full object-cover z-[-1]"
       >
-        <source src="https://res.cloudinary.com/dvic0tda9/video/upload/v1719509234/Whisk_cauajdfhm2m2yteyltmyntktngfios1hztq0lwz_ttsaff.mp4" type="video/mp4" />
+        <source src="https://res.cloudinary.com/dvic0tda9/video/upload/A_beautiful_autumn_202509021142_ej7aaf.mp4" type="video/mp4" />
       </video>
       <div className="relative z-10">
         <HeaderNav />
