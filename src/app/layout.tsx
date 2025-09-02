@@ -16,7 +16,7 @@ const FloatingOrb = ({ onClick }: { onClick: () => void }) => {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <div className="fixed bottom-8 right-8 z-50">
+        <div className="fixed bottom-8 right-8 z-50 cursor-pointer">
           <div className="relative group">
              <EtherealShadow 
               color="hsl(var(--primary))"
