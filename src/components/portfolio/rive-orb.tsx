@@ -9,7 +9,7 @@ export const RiveOrb = () => {
       <Rive
         src="https://public.rive.app/community/runtime-files/2156-4299-orb.riv"
         stateMachines="State Machine 1"
-        autoplay
+        autoPlay
       />
     </div>
   );
