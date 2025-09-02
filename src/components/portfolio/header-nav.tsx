@@ -12,40 +12,52 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 
 const Signature = () => {
+    const name = "Shamanth";
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.1,
+                delayChildren: 0.2,
+            },
+        },
+    };
+
+    const letterVariants = {
+        hidden: { y: 20, opacity: 0 },
+        visible: {
+            y: 0,
+            opacity: 1,
+            transition: {
+                type: 'spring',
+                stiffness: 100,
+                damping: 10,
+            },
+        },
+    };
+
     return (
-        <motion.svg
-            width="150"
-            height="50"
-            viewBox="0 0 400 100"
+        <motion.div
+            variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="text-white"
-            style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}
+            className="flex text-2xl font-medium text-white"
+            style={{ fontFamily: 'Brush Script MT, cursive', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}
+            aria-label={name}
         >
-            <motion.path
-                d="M50,70 C50,20 100,20 120,50 C140,80 180,20 200,50 C220,80 260,20 280,50 C300,80 340,20 350,40"
-                fill="transparent"
-                strokeWidth="8"
-                stroke="currentColor"
-                strokeLinecap="round"
-                variants={{
-                    hidden: { pathLength: 0, opacity: 0 },
-                    visible: {
-                        pathLength: 1,
-                        opacity: 1,
-                        transition: {
-                            pathLength: { type: "spring", duration: 1.5, bounce: 0 },
-                            opacity: { duration: 0.01 },
-                        },
-                    },
-                }}
-            />
-             <text x="40" y="90" fontFamily="Brush Script MT, Brush Script Std, cursive" fontSize="60" fill="currentColor">
-                Shamanth
-            </text>
-        </motion.svg>
-    )
-}
+            {name.split('').map((char, index) => (
+                <motion.span
+                    key={`${char}-${index}`}
+                    variants={letterVariants}
+                    className="inline-block"
+                >
+                    {char}
+                </motion.span>
+            ))}
+        </motion.div>
+    );
+};
 
 
 export function HeaderNav() {
