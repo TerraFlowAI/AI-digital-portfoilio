@@ -43,7 +43,7 @@ const Signature = () => {
             initial="hidden"
             animate="visible"
             className="flex text-2xl font-medium text-white"
-            style={{ fontFamily: 'Brush Script MT, cursive', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}
+            style={{ fontFamily: "'Brush Script MT', cursive", textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}
             aria-label={name}
         >
             {name.split('').map((char, index) => (
@@ -66,7 +66,6 @@ export function HeaderNav() {
     { href: '/#experience', label: 'Experience' },
     { href: '/#projects', label: 'Projects' },
     { href: '/about', label: 'About' },
-    { href: '/voice-clone', label: 'Voice Clone'},
     { href: '/#contact', label: 'Contact' },
   ];
 
@@ -131,4 +130,3 @@ export function HeaderNav() {
     </header>
   );
 }
-
