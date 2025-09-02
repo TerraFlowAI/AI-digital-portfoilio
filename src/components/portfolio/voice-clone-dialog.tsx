@@ -22,7 +22,7 @@ export function VoiceCloneDialog() {
     { role: 'model', content: "I'm listening. Ask me a question about Shamanth." },
   ]);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
-  const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
+  const audioChunks = useRef<Blob[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
@@ -32,45 +32,31 @@ export function VoiceCloneDialog() {
     }
   }, []);
 
-  const startListening = async () => {
+  const handleStartListening = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream);
       setMediaRecorder(recorder);
-      recorder.start();
-      setIsListening(true);
+      audioChunks.current = [];
       
       recorder.ondataavailable = (event) => {
-        setAudioChunks((prev) => [...prev, event.data]);
+        if (event.data.size > 0) {
+          audioChunks.current.push(event.data);
+        }
       };
-    } catch (error) {
-      console.error('Error accessing microphone:', error);
-      // Handle error (e.g., show a toast)
-    }
-  };
 
-  const stopListening = () => {
-    if (mediaRecorder) {
-      mediaRecorder.stop();
-      setIsListening(false);
-      setIsProcessing(true);
+      recorder.onstop = async () => {
+        setIsProcessing(true);
+        const audioBlob = new Blob(audioChunks.current, { type: 'audio/webm' });
+        
+        // Placeholder for Speech-to-Text.
+        // In a real implementation, you would send audioBlob to a speech-to-text API.
+        const userQuery = "Tell me about Shamanth's experience."; // Placeholder text.
+        setConversation(prev => [...prev, { role: 'user', content: userQuery }]);
 
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-        const reader = new FileReader();
-        reader.readAsDataURL(audioBlob);
-        reader.onloadend = async () => {
-          const base64Audio = reader.result as string;
-          // For now, we'll use a placeholder for the user's spoken text.
-          // In a full implementation, this would be sent to a speech-to-text API.
-          const userQuery = "Tell me about Shamanth's experience.";
-          
-          setConversation(prev => [...prev, { role: 'user', content: userQuery }]);
-
+        try {
           const history = conversation.map(msg => ({ role: msg.role, content: msg.content }));
-          
           const aiResponse = await voiceClone({ query: userQuery, history });
-          
           setConversation(prev => [...prev, { role: 'model', content: aiResponse.response }]);
           
           const audioResponse = await textToSpeech(aiResponse.response);
@@ -80,18 +66,34 @@ export function VoiceCloneDialog() {
             audioRef.current.play();
             setIsPlaying(true);
           }
-          setIsProcessing(false);
-          setAudioChunks([]);
-        };
+        } catch (error) {
+            console.error("Error with AI or TTS:", error);
+            setConversation(prev => [...prev, { role: 'model', content: "Sorry, I ran into an error." }]);
+        } finally {
+            setIsProcessing(false);
+        }
       };
+
+      recorder.start();
+      setIsListening(true);
+    } catch (error) {
+      console.error('Error accessing microphone:', error);
+      // You could add a toast notification here to inform the user.
+    }
+  };
+
+  const handleStopListening = () => {
+    if (mediaRecorder && isListening) {
+      mediaRecorder.stop();
+      setIsListening(false);
     }
   };
 
   const toggleListening = () => {
     if (isListening) {
-      stopListening();
+      handleStopListening();
     } else {
-      startListening();
+      handleStartListening();
     }
   };
   
