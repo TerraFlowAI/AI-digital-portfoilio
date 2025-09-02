@@ -12,22 +12,6 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 
 const Signature = () => {
-    const name = "Shamanth";
-    const variants = {
-        hidden: { pathLength: 0, opacity: 0 },
-        visible: (i: number) => {
-            const delay = i * 0.1;
-            return {
-                pathLength: 1,
-                opacity: 1,
-                transition: {
-                    pathLength: { delay, type: "spring", duration: 1.5, bounce: 0 },
-                    opacity: { delay, duration: 0.01 },
-                },
-            };
-        },
-    };
-
     return (
         <motion.svg
             width="150"
@@ -44,8 +28,17 @@ const Signature = () => {
                 strokeWidth="8"
                 stroke="currentColor"
                 strokeLinecap="round"
-                variants={variants}
-                custom={1}
+                variants={{
+                    hidden: { pathLength: 0, opacity: 0 },
+                    visible: {
+                        pathLength: 1,
+                        opacity: 1,
+                        transition: {
+                            pathLength: { type: "spring", duration: 1.5, bounce: 0 },
+                            opacity: { duration: 0.01 },
+                        },
+                    },
+                }}
             />
              <text x="40" y="90" fontFamily="Brush Script MT, Brush Script Std, cursive" fontSize="60" fill="currentColor">
                 Shamanth
@@ -68,9 +61,7 @@ export function HeaderNav() {
     <header className="fixed top-0 left-0 right-0 z-50 px-4">
       <nav className="mt-4 max-w-6xl mx-auto flex items-center justify-between rounded-full bg-white/10 backdrop-blur-lg border border-white/20 shadow-lg px-4 py-2">
         <Link href="/" className="inline-flex items-center gap-2">
-          <span className="sm:text-base text-sm font-semibold tracking-tight text-white" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
-            SHAMANTH
-          </span>
+          <Signature />
         </Link>
 
         <div className="hidden md:flex items-center gap-1">
