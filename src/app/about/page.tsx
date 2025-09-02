@@ -277,7 +277,7 @@ export default function AboutPage() {
     <div className="antialiased selection:bg-white selection:text-neutral-900 text-white/90 bg-neutral-950 font-body">
       <HeaderNav />
       <main>
-        <section className="relative h-screen flex items-center">
+        <section className="relative h-screen flex items-center overflow-hidden">
           <div className="absolute inset-0 w-full h-full">
              <CausticShader />
           </div>
@@ -1008,6 +1008,3 @@ export default function AboutPage() {
     </div>
   );
 }
-
-    
-    
