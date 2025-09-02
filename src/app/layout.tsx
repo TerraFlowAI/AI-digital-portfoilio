@@ -10,11 +10,13 @@ import Link from 'next/link';
 import { VoiceCloneDialog } from '@/components/portfolio/voice-clone-dialog';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogTrigger, DialogContent } from '@/components/ui/dialog';
 
-const FloatingOrb = ({ onClick }: { onClick: () => void }) => {
+const FloatingOrb = () => {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
-    <Dialog>
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
         <div className="fixed bottom-8 right-8 z-50 cursor-pointer">
           <div className="relative group">
@@ -52,7 +54,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [isVoiceCloneOpen, setIsVoiceCloneOpen] = useState(false);
   
   return (
     <html lang="en" className="" style={{scrollBehavior:'smooth'}}>
@@ -65,7 +66,7 @@ export default function RootLayout({
       <body className="font-body antialiased">
         {children}
         <Toaster />
-        <FloatingOrb onClick={() => setIsVoiceCloneOpen(true)} />
+        <FloatingOrb />
       </body>
     </html>
   );
