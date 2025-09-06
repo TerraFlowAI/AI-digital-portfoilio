@@ -6,12 +6,12 @@
  * in all scenarios, so we create these simple wrapper functions.
  */
 
-import { runAction } from 'genkit/next/client';
+import { runFlow } from '@genkit-ai/next/client';
 import type { chat } from './flows/chat-flow';
 import type { transcribe } from './flows/transcribe-flow';
 
 export const transcribe = (payload: Parameters<typeof transcribe>[0]) => 
-  runAction(transcribe, payload);
+  runFlow(transcribe, payload);
 
 export const chat = (payload: Parameters<typeof chat>[0]) =>
-  runAction(chat, payload);
+  runFlow(chat, payload);

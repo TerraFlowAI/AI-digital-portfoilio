@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Bot, Loader2, Mic, Send, StopCircle, X } from 'lucide-react';
 import { useWindowSize } from 'react-use';
 import { saveConversation } from '@/ai/flows/gemini-assistant-flow';
