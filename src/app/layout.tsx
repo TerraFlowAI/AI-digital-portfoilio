@@ -4,12 +4,7 @@
 import type {Metadata} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
-import dynamic from 'next/dynamic';
-
-const VoiceAssistant = dynamic(
-  () => import('@/components/assistant/voice-assistant').then(mod => mod.VoiceAssistant),
-  { ssr: false }
-);
+import { VoiceAssistant } from '@/components/assistant/voice-assistant';
 
 
 export default function RootLayout({
