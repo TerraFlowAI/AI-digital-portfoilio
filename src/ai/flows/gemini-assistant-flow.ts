@@ -99,9 +99,8 @@ const geminiAssistantFlow = ai.defineFlow(
                 responseModalities: ['AUDIO'],
                 speechConfig: {
                     voiceConfig: {
-                        customVoiceConfig: {
-                            model: "en-IN-Wavenet-D",
-                            reportedUsage: "REALTIME"
+                        prebuiltVoiceConfig: {
+                            voiceName: "Arneb", // A high-quality Indian Male voice
                         }
                     },
                 },
