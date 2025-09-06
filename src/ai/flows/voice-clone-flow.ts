@@ -86,9 +86,13 @@ const voiceCloneFlow = ai.defineFlow(
     outputSchema: VoiceCloneOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input);
+    const { output, history } = await prompt(input);
     if(output){
-        await saveConversationToAirtableTool({ query: input.query, response: output.response });
+        try {
+            await saveConversationToAirtableTool({ query: input.query, response: output.response });
+        } catch (e) {
+            console.error('Failed to save to airtable', e);
+        }
         return output;
     }
     return {response: 'Sorry, I had trouble responding.'};

@@ -160,20 +160,22 @@ export function VoiceAssistant() {
   const handleSend = async (query?: string) => {
     const currentQuery = query || transcript;
     if (!currentQuery.trim() || isProcessing) return;
-
+  
     setIsProcessing(true);
     setTranscript("");
-    
+  
     const newHistoryEntry = { role: 'user' as const, content: currentQuery };
-    const updatedHistory = [...history, newHistoryEntry];
-    setHistory(updatedHistory);
-
+    const currentHistory = [...history, newHistoryEntry];
+    setHistory(currentHistory);
+  
     try {
-      const aiResponse = await voiceClone({ query: currentQuery, history: updatedHistory });
+      const aiResponse = await voiceClone({ query: currentQuery, history: currentHistory });
       const assistantReply = aiResponse.response;
       setLastAssistantReply(assistantReply);
-      setHistory(prev => [...prev, { role: 'model', content: assistantReply }]);
-
+      
+      const updatedHistoryWithResponse = [...currentHistory, { role: 'model' as const, content: assistantReply }];
+      setHistory(updatedHistoryWithResponse);
+  
       const audioResponse = await textToSpeech(assistantReply);
       if (audioRef.current && audioResponse.media) {
         audioRef.current.src = audioResponse.media;
