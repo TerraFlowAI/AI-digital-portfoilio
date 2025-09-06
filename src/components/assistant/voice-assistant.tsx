@@ -27,6 +27,10 @@ function blobToBase64(blob: Blob): Promise<string> {
 
 // Gemini Speech-to-Text
 async function transcribeAudio(blob: Blob): Promise<string> {
+    if (!GEMINI_API_KEY) {
+        console.error("Gemini API key not found.");
+        return "";
+    }
     const base64 = await blobToBase64(blob);
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
         method: "POST",
@@ -51,6 +55,10 @@ async function transcribeAudio(blob: Blob): Promise<string> {
 
 // Stream Gemini Chat Reply
 async function* streamGeminiReply(prompt: string, history: { role: 'user' | 'model'; content: string }[]) {
+    if (!GEMINI_API_KEY) {
+        console.error("Gemini API key not found.");
+        return;
+    }
     const formattedHistory = history.map(turn => ({
         role: turn.role,
         parts: [{ text: turn.content }]
@@ -78,7 +86,7 @@ async function* streamGeminiReply(prompt: string, history: { role: 'user' | 'mod
 
         const chunk = decoder.decode(value, { stream: true });
         // Clean up the streaming response format
-        const jsonChunks = chunk.replace(/^data: /gm, '').split('\n').filter(s => s.trim() !== '');
+        const jsonChunks = chunk.replace(/^data: /gm, '').split('\n').filter(s => s.trim() !== '' && s.startsWith('{'));
         
         for (const jsonChunk of jsonChunks) {
             try {
@@ -89,28 +97,36 @@ async function* streamGeminiReply(prompt: string, history: { role: 'user' | 'mod
                      yield partialText;
                  }
             } catch (error) {
-                // Ignore parsing errors which can happen with incomplete chunks
+                console.error("Error parsing streaming JSON:", error, "Chunk:", jsonChunk);
             }
         }
     }
 }
 
 // Stream TTS
-async function playStreamingTTS(textStream: AsyncGenerator<string>, onPlaybackStart: () => void, onPlaybackEnd: () => void) {
+async function playStreamingTTS(textStream: AsyncGenerator<string | undefined, void, unknown>, onPlaybackStart: () => void, onPlaybackEnd: () => void) {
+    if (!GEMINI_API_KEY) {
+        console.error("Gemini API key not found.");
+        onPlaybackEnd();
+        return;
+    }
+    
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
     let isPlaying = false;
     let audioQueue: AudioBuffer[] = [];
     let spokenText = "";
+    let streamFinished = false;
 
     onPlaybackStart();
 
     const processQueue = () => {
-        if (audioQueue.length === 0 || isPlaying) {
-            if (audioQueue.length === 0 && !textStream) {
+        if (audioQueue.length === 0) {
+            if (streamFinished) {
                  onPlaybackEnd();
             }
             return;
         }
+        if (isPlaying) return;
 
         isPlaying = true;
         const buffer = audioQueue.shift();
@@ -128,12 +144,13 @@ async function playStreamingTTS(textStream: AsyncGenerator<string>, onPlaybackSt
 
     (async () => {
         for await (const partial of textStream) {
+            if (typeof partial !== 'string') continue;
             const newText = partial.replace(spokenText, "").trim();
             if (!newText) continue;
             spokenText = partial;
             
             try {
-                const ttsRes = await fetch(`https://texttospeech.googleapis.com/v1beta/text:synthesize?key=${GEMINI_API_KEY}`, {
+                const ttsRes = await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${GEMINI_API_KEY}`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -156,6 +173,8 @@ async function playStreamingTTS(textStream: AsyncGenerator<string>, onPlaybackSt
                 console.error("Error fetching or decoding TTS audio:", e);
             }
         }
+        streamFinished = true;
+        if (!isPlaying) processQueue();
     })();
 }
 
@@ -210,7 +229,7 @@ export function VoiceAssistant() {
         if (!navigator.mediaDevices?.getUserMedia) {
             console.error("Media devices not supported");
             setAssistantReply("Sorry, your browser doesn't support microphone access.");
-            return false;
+            return null;
         }
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -224,11 +243,11 @@ export function VoiceAssistant() {
                 source.connect(analyser);
                 analyserRef.current = analyser;
              }
-             return true;
+             return stream;
         } catch (error) {
             console.error("Microphone access denied:", error);
             setAssistantReply("Microphone access is required. Please enable it in your browser settings.");
-            return false;
+            return null;
         }
     };
 
@@ -242,25 +261,29 @@ export function VoiceAssistant() {
     };
     
     const startRecording = async () => {
-        const hasMic = await setupMicrophone();
-        if (!hasMic) return;
+        const stream = await setupMicrophone();
+        if (!stream) return;
 
         if (audioContextRef.current?.state === 'suspended') {
             await audioContextRef.current.resume();
         }
 
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+        const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+        mediaRecorderRef.current = recorder;
         audioChunksRef.current = [];
         
-        mediaRecorderRef.current.ondataavailable = (event) => audioChunksRef.current.push(event.data);
-        mediaRecorderRef.current.onstop = async () => {
+        recorder.ondataavailable = (event) => {
+            audioChunksRef.current.push(event.data);
+        };
+        
+        recorder.onstop = async () => {
             setIsProcessing(true);
+            setAssistantReply("");
             const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
             try {
                 const transcript = await transcribeAudio(audioBlob);
                 if (transcript) {
-                    handleUserInput(transcript, "voice");
+                    await handleUserInput(transcript, "voice");
                 } else {
                     setAssistantReply("Sorry, I couldn't understand what you said.");
                 }
@@ -272,13 +295,15 @@ export function VoiceAssistant() {
             }
         };
 
-        mediaRecorderRef.current.start();
+        recorder.start();
         setIsRecording(true);
         animationFrameRef.current = requestAnimationFrame(measureAmplitude);
     };
 
     const stopRecording = () => {
-        mediaRecorderRef.current?.stop();
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+            mediaRecorderRef.current.stop();
+        }
         setIsRecording(false);
          if(animationFrameRef.current) {
             cancelAnimationFrame(animationFrameRef.current);
@@ -289,8 +314,8 @@ export function VoiceAssistant() {
     const handleUserInput = async (input: string, mode: "voice" | "text") => {
         if (!input.trim()) return;
 
-        const currentHistory = [...history, { role: 'user' as const, content: input }];
-        setHistory(currentHistory);
+        const newUserHistory = [...history, { role: 'user' as const, content: input }];
+        setHistory(newUserHistory);
         setUserInput("");
         setIsProcessing(true);
         setAssistantReply("");
@@ -298,20 +323,23 @@ export function VoiceAssistant() {
         try {
             const textStream = streamGeminiReply(input, history);
             
-            // This is a fire-and-forget call to start TTS playback
             playStreamingTTS(textStream, 
                 () => setIsPlaying(true), 
                 () => setIsPlaying(false)
             );
 
             let finalReply = "";
-            for await (const partial of textStream) {
-                setAssistantReply(partial);
-                finalReply = partial;
+            // Re-create the async generator to consume it for text display
+            const displayTextStream = streamGeminiReply(input, history);
+            for await (const partial of displayTextStream) {
+                if (partial) {
+                    setAssistantReply(partial);
+                    finalReply = partial;
+                }
             }
 
-            setHistory(prev => [...prev, { role: 'model', content: finalReply }]);
-            saveConversation({ query: input, response: finalReply });
+            setHistory(prev => [...prev, { role: 'model' as const, content: finalReply }]);
+            await saveConversation({ query: input, response: finalReply });
 
         } catch (error) {
             console.error("Error streaming reply:", error);
@@ -412,3 +440,5 @@ export function VoiceAssistant() {
         </AnimatePresence>
     );
 }
+
+    
