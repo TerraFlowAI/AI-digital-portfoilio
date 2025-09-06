@@ -5,32 +5,22 @@
 
 import { z } from 'zod';
 
-// Schema for the AI-powered bio refinement tool
-export const RefineBioInputSchema = z.object({
-  bio: z.string().describe('The user provided bio to be refined.'),
-  desiredTone: z.string().describe('The desired tone for the refined bio (e.g., professional, witty, casual).'),
-});
-export type RefineBioInput = z.infer<typeof RefineBioInputSchema>;
-
-export const RefineBioOutputSchema = z.object({
-  refinedBio: z.string().describe('The refined bio based on the input and desired tone.'),
-});
-export type RefineBioOutput = z.infer<typeof RefineBioOutputSchema>;
-
-
-// Schema for the voice clone flow
 const messageSchema = z.object({
     role: z.enum(['user', 'model']),
     content: z.string(),
 });
 
-export const VoiceCloneInputSchema = z.object({
-  query: z.string().describe("The user's question or statement."),
+// Schema for the Gemini Assistant flow
+export const GeminiAssistantInputSchema = z.object({
+  query: z.string().optional().describe("The user's text question or statement."),
+  audio: z.string().optional().describe("The user's voice input as a base64 encoded string."),
   history: z.array(messageSchema).optional().describe('The conversation history.'),
 });
-export type VoiceCloneInput = z.infer<typeof VoiceCloneInputSchema>;
+export type GeminiAssistantInput = z.infer<typeof GeminiAssistantInputSchema>;
 
-export const VoiceCloneOutputSchema = z.object({
-  response: z.string().describe("The AI's response."),
+export const GeminiAssistantOutputSchema = z.object({
+  transcript: z.string().optional().describe("The transcript of the user's audio input."),
+  reply: z.string().describe("The AI's response."),
+  audioReply: z.string().optional().describe("The AI's response as base64 encoded audio data."),
 });
-export type VoiceCloneOutput = z.infer<typeof VoiceCloneOutputSchema>;
+export type GeminiAssistantOutput = z.infer<typeof GeminiAssistantOutputSchema>;

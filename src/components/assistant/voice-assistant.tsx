@@ -1,12 +1,10 @@
-
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, Send, Bot, X, Loader2 } from 'lucide-react';
-import { voiceClone } from '@/ai/flows/voice-clone-flow';
-import { textToSpeech } from '@/ai/flows/tts-flow';
-import type { VoiceCloneInput } from '@/ai/types';
+import { Mic, Send, Bot, X, Loader2, StopCircle } from 'lucide-react';
+import { geminiAssistant } from '@/ai/flows/gemini-assistant-flow';
+import { useWindowSize } from 'react-use';
 
 // Simple Waveform Component
 const Waveform = ({ amplitude }: { amplitude: number }) => {
@@ -17,13 +15,13 @@ const Waveform = ({ amplitude }: { amplitude: number }) => {
   return (
     <div className="flex items-center justify-center w-full h-full gap-1">
       {Array.from({ length: bars }).map((_, i) => {
-        const barHeight = Math.max(2, (amplitude / 255) * height * (Math.sin(i / 1.5) * 0.5 + 0.5) * 2);
+        const barHeight = Math.max(2, (amplitude / 255) * height * (Math.sin(i / 1.5 + Date.now()/200) * 0.5 + 0.5) * 2);
         return (
           <motion.div
             key={i}
             className="w-1.5 bg-orange-400 rounded-full"
-            animate={{ height: `${barHeight}px` }}
-            transition={{ duration: 0.1 }}
+            style={{ height: `${barHeight}px` }}
+            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
           />
         );
       })}
@@ -33,21 +31,23 @@ const Waveform = ({ amplitude }: { amplitude: number }) => {
 
 
 export function VoiceAssistant() {
-  const [isListening, setIsListening] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [isExpanded, setIsExpanded] = useState(false);
   const [amplitude, setAmplitude] = useState(0);
-  const [history, setHistory] = useState<VoiceCloneInput['history']>([]);
+  const [history, setHistory] = useState<{ role: 'user' | 'model'; content: string }[]>([]);
   const [lastAssistantReply, setLastAssistantReply] = useState("Hello! How can I help you today?");
 
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const dataArrayRef = useRef<Uint8Array | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const { width } = useWindowSize();
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -59,12 +59,17 @@ export function VoiceAssistant() {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
-      recognitionRef.current?.abort();
+      mediaRecorderRef.current?.stop();
     }
   }, []);
 
   const setupMicrophone = async () => {
-    if (audioContextRef.current) return;
+     if (!navigator.mediaDevices?.getUserMedia) {
+        console.error("Media devices not supported");
+        // You should show a user-facing error message here
+        return;
+    }
+    if (audioContextRef.current?.state === 'running') return;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const context = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -78,12 +83,11 @@ export function VoiceAssistant() {
       analyserRef.current = analyser;
     } catch (error) {
       console.error("Microphone access denied:", error);
-      // You might want to show a toast or message to the user here
     }
   };
 
   const measureAmplitude = () => {
-    if (analyserRef.current && dataArrayRef.current) {
+    if (analyserRef.current && dataArrayRef.current && isRecording) {
       analyserRef.current.getByteFrequencyData(dataArrayRef.current);
       const avg = dataArrayRef.current.reduce((a, b) => a + b, 0) / dataArrayRef.current.length;
       setAmplitude(avg);
@@ -91,98 +95,84 @@ export function VoiceAssistant() {
     }
   };
 
-  const handleListen = async () => {
-    if (isListening) {
-      recognitionRef.current?.stop();
-      setIsListening(false);
-      return;
-    }
-
+  const startRecording = async () => {
     await setupMicrophone();
-    const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      console.error("Speech recognition not supported in this browser.");
-      return;
+    if (!audioContextRef.current || audioContextRef.current.state === 'suspended') {
+      await audioContextRef.current?.resume();
     }
     
-    setIsListening(true);
-    setTranscript("");
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorderRef.current = new MediaRecorder(stream);
+    audioChunksRef.current = [];
 
-    if (recognitionRef.current) {
-      recognitionRef.current.abort();
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.lang = navigator.language || 'en-US';
-    recognition.interimResults = true;
-    recognition.continuous = false; // Set to false to end after a pause
-
-    let finalTranscript = '';
-    recognition.onresult = (event) => {
-      let interimTranscript = '';
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
-        if (event.results[i].isFinal) {
-          finalTranscript += event.results[i][0].transcript;
-        } else {
-          interimTranscript += event.results[i][0].transcript;
-        }
-      }
-      setTranscript(interimTranscript || finalTranscript);
+    mediaRecorderRef.current.ondataavailable = (event) => {
+      audioChunksRef.current.push(event.data);
     };
-    
-    recognition.onend = () => {
-      setIsListening(false);
-      if (animationFrameRef.current) {
+
+    mediaRecorderRef.current.onstop = async () => {
+      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+      handleSend(audioBlob);
+    };
+
+    mediaRecorderRef.current.start();
+    setIsRecording(true);
+    animationFrameRef.current = requestAnimationFrame(measureAmplitude);
+  };
+
+  const stopRecording = () => {
+    mediaRecorderRef.current?.stop();
+    setIsRecording(false);
+    if(animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
-      }
-      setAmplitude(0);
-      if (finalTranscript.trim()) {
-        handleSend(finalTranscript.trim());
-      }
-    };
-    
-    recognition.onerror = (event) => {
-      console.error("Speech recognition error:", event.error);
-      setIsListening(false);
-       if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-      setAmplitude(0);
-    };
-
-    recognition.start();
-    recognitionRef.current = recognition;
-    if (audioContextRef.current) {
-      animationFrameRef.current = requestAnimationFrame(measureAmplitude);
+        setAmplitude(0);
     }
   };
 
-  const handleSend = async (query?: string) => {
-    const currentQuery = query || transcript;
-    if (!currentQuery.trim() || isProcessing) return;
-  
+  const handleSend = async (audioBlob?: Blob, textQuery?: string) => {
+    if ((!audioBlob && !textQuery) || isProcessing) return;
+
     setIsProcessing(true);
-    setTranscript("");
-  
-    const newHistoryEntry = { role: 'user' as const, content: currentQuery };
-    const currentHistory = [...history, newHistoryEntry];
-    setHistory(currentHistory);
-  
+    let userQuery = textQuery || '';
+    
+    // Add user text input to history immediately
+    if(textQuery) {
+        setHistory(prev => [...prev, {role: 'user', content: textQuery}]);
+        setTranscript('');
+    }
+
     try {
-      const aiResponse = await voiceClone({ query: currentQuery, history: currentHistory });
-      const assistantReply = aiResponse.response;
-      setLastAssistantReply(assistantReply);
+      let audioBase64: string | undefined = undefined;
+      if (audioBlob) {
+        const reader = new FileReader();
+        reader.readAsDataURL(audioBlob);
+        audioBase64 = await new Promise(resolve => {
+            reader.onloadend = () => {
+                resolve((reader.result as string).split(',')[1]);
+            };
+        });
+      }
+
+      const response = await geminiAssistant({
+        audio: audioBase64,
+        query: userQuery,
+        history,
+      });
+
+      if (response.transcript && !textQuery) {
+        userQuery = response.transcript;
+        setHistory(prev => [...prev, {role: 'user', content: response.transcript}]);
+      }
       
-      const updatedHistoryWithResponse = [...currentHistory, { role: 'model' as const, content: assistantReply }];
-      setHistory(updatedHistoryWithResponse);
-  
-      const audioResponse = await textToSpeech(assistantReply);
-      if (audioRef.current && audioResponse.media) {
-        audioRef.current.src = audioResponse.media;
+      setLastAssistantReply(response.reply);
+      setHistory(prev => [...prev, {role: 'model', content: response.reply}]);
+
+      if (audioRef.current && response.audioReply) {
+        audioRef.current.src = response.audioReply;
         audioRef.current.play().catch(e => console.error("Audio playback error:", e));
       }
+
     } catch (error) {
-      console.error("Error with AI or TTS:", error);
+      console.error("Error with AI Assistant:", error);
       const errorMessage = "Sorry, I had trouble responding.";
       setLastAssistantReply(errorMessage);
       setHistory(prev => [...prev, {role: 'model', content: errorMessage}]);
@@ -190,6 +180,12 @@ export function VoiceAssistant() {
       setIsProcessing(false);
     }
   };
+
+  const handleTextSend = () => {
+      if(transcript.trim()) {
+          handleSend(undefined, transcript.trim());
+      }
+  }
   
   const orbSize = 64;
 
@@ -203,7 +199,7 @@ export function VoiceAssistant() {
       x: 0,
     },
     expanded: { 
-      width: 'min(400px, 90vw)', 
+      width: width > 420 ? '400px' : '90vw', 
       height: 'auto', 
       borderRadius: '24px', 
       bottom: '1.5rem', 
@@ -211,7 +207,7 @@ export function VoiceAssistant() {
       x: '50%',
     },
   };
-  
+
   return (
     <AnimatePresence>
       <motion.div
@@ -227,7 +223,7 @@ export function VoiceAssistant() {
         style={{
            backdropFilter: 'blur(16px)',
            WebkitBackdropFilter: 'blur(16px)',
-           backgroundColor: 'rgba(23, 23, 23, 0.5)', // neutral-900 with 50% opacity
+           backgroundColor: 'rgba(23, 23, 23, 0.5)',
            border: '1px solid rgba(255, 255, 255, 0.1)',
            boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
         }}
@@ -236,7 +232,7 @@ export function VoiceAssistant() {
           {!isExpanded ? (
             <div onClick={() => setIsExpanded(true)} className="w-full h-full flex items-center justify-center">
                <AnimatePresence>
-                {(isListening || isPlaying) && (
+                {(isRecording || isPlaying) && (
                     <motion.div 
                         className="absolute inset-0 rounded-full bg-orange-500/30"
                         animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5]}}
@@ -276,18 +272,18 @@ export function VoiceAssistant() {
                   type="text"
                   value={transcript}
                   onChange={(e) => setTranscript(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                  placeholder={isListening ? "Listening..." : "Ask or type anything..."}
+                  onKeyDown={(e) => e.key === 'Enter' && handleTextSend()}
+                  placeholder={isRecording ? "Listening..." : "Ask or type anything..."}
                   className="flex-1 text-sm bg-transparent text-white placeholder:text-white/50 outline-none border-b border-white/20 focus:border-orange-400 transition-colors py-1"
-                  disabled={isListening}
+                  disabled={isRecording}
                 />
                 <button 
-                  onClick={handleListen} 
-                  className={`p-2 rounded-full transition-colors ${isListening ? 'bg-orange-500 text-white animate-pulse' : 'bg-white/20 text-white/80 hover:bg-white/30'}`}
+                  onClick={isRecording ? stopRecording : startRecording} 
+                  className={`p-2 rounded-full transition-colors ${isRecording ? 'bg-red-500 text-white animate-pulse' : 'bg-white/20 text-white/80 hover:bg-white/30'}`}
                 >
-                  <Mic size={20} />
+                  {isRecording ? <StopCircle size={20} /> : <Mic size={20} />}
                 </button>
-                <button onClick={() => handleSend()} disabled={!transcript || isProcessing} className="p-2 rounded-full bg-white/20 text-white/80 hover:bg-white/30 disabled:opacity-50 disabled:cursor-not-allowed">
+                <button onClick={handleTextSend} disabled={!transcript || isProcessing} className="p-2 rounded-full bg-white/20 text-white/80 hover:bg-white/30 disabled:opacity-50 disabled:cursor-not-allowed">
                   <Send size={20} />
                 </button>
               </div>
