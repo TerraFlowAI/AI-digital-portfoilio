@@ -1,13 +1,10 @@
-
 'use client';
 
 import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bot, Loader2, Mic, Send, StopCircle, X } from 'lucide-react';
+import { Bot, Loader2, Mic, StopCircle, X } from 'lucide-react';
 import { useWindowSize } from 'react-use';
-import { saveConversation } from '@/ai/flows/gemini-assistant-flow';
-import { chat, transcribe } from "@/ai/client-flows";
-
+import { geminiAssistant } from "@/ai/client-flows";
 
 const Waveform = ({ amplitude }: { amplitude: number }) => {
     const height = 64;
@@ -31,15 +28,12 @@ const Waveform = ({ amplitude }: { amplitude: number }) => {
     );
 };
 
-
 export function VoiceAssistant() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false); // For STT and thinking
-  const [isPlaying, setIsPlaying] = useState(false); // For TTS playback
-  const [userInput, setUserInput] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [assistantReply, setAssistantReply] = useState("");
-  const [history, setHistory] = useState<{ role: 'user' | 'model'; content: string }[]>([]);
   const [amplitude, setAmplitude] = useState(0);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -100,7 +94,6 @@ export function VoiceAssistant() {
           await audioContextRef.current.resume();
       }
 
-      // Use a specific MIME type that is likely to be supported and is good for speech
       const options = { mimeType: 'audio/webm;codecs=opus' };
       let recorder: MediaRecorder;
       try {
@@ -120,36 +113,42 @@ export function VoiceAssistant() {
       
       recorder.onstop = async () => {
           setIsProcessing(true);
-          setAssistantReply("");
+          setAssistantReply("Thinking...");
 
           const audioBlob = new Blob(audioChunksRef.current, { type: options.mimeType });
           
           try {
               const base64 = await blobToBase64(audioBlob);
-              const transcript = await transcribe({audioBase64: base64, mimeType: options.mimeType});
+              const { reply, audioBase64 } = await geminiAssistant({audioBase64: base64, mimeType: options.mimeType});
+              
+              setAssistantReply(reply);
 
-              if (transcript) {
-                  setUserInput(transcript); // Put transcript in text box
-                  await handleUserInput(transcript);
-              } else {
-                  setAssistantReply("Sorry, I couldn't understand what you said.");
-                  setIsProcessing(false);
+              if (audioBase64) {
+                  setIsPlaying(true);
+                  const audio = new Audio(`data:audio/mp3;base64,${audioBase64}`);
+                  audio.play();
+                  audio.onended = () => setIsPlaying(false);
               }
+
           } catch (error) {
-              console.error("Error during transcription or chat:", error);
+              console.error("Error during assistant interaction:", error);
               setAssistantReply("Sorry, there was an error processing your request.");
+          } finally {
               setIsProcessing(false);
           }
       };
 
       recorder.start();
       setIsRecording(true);
+      setAssistantReply("Listening...")
       animationFrameRef.current = requestAnimationFrame(measureAmplitude);
   };
 
   const stopRecording = () => {
       if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
           mediaRecorderRef.current.stop();
+          // Stop the tracks on the stream to turn off the mic indicator
+          mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
       }
       setIsRecording(false);
        if(animationFrameRef.current) {
@@ -158,45 +157,11 @@ export function VoiceAssistant() {
       }
   };
 
-  const handleUserInput = async (input: string) => {
-      if (!input.trim()) return;
-
-      const newUserInput = input;
-      const newHistory = [...history, { role: 'user' as const, content: newUserInput }];
-      setHistory(newHistory);
-      setUserInput("");
-      setIsProcessing(true);
-      setAssistantReply("");
-      
-      try {
-          const { reply, audioBase64 } = await chat({ prompt: newUserInput, history: newHistory });
-          
-          setAssistantReply(reply);
-
-          if (audioBase64) {
-              setIsPlaying(true);
-              const audio = new Audio(`data:audio/mp3;base64,${audioBase64}`);
-              audio.play();
-              audio.onended = () => setIsPlaying(false);
-          }
-
-          setHistory(prev => [...prev, { role: 'model' as const, content: reply }]);
-          await saveConversation({ query: newUserInput, response: reply });
-
-      } catch (error) {
-          console.error("Error getting reply:", error);
-          setAssistantReply("Sorry, I encountered an error.");
-      } finally {
-          setIsProcessing(false);
-      }
-  };
-
   function blobToBase64(blob: Blob): Promise<string> {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onloadend = () => {
             if (typeof reader.result === 'string') {
-                // remove the `data:...;base64,` prefix
                 resolve(reader.result.split(',')[1]);
             } else {
                 reject(new Error("Failed to read audio blob as base64"));
@@ -213,6 +178,9 @@ export function VoiceAssistant() {
       initial: { width: orbSize, height: orbSize, borderRadius: '50%', bottom: '1.5rem', right: '1.5rem', x: 0 },
       expanded: { width: width > 420 ? '400px' : '90vw', height: 'auto', borderRadius: '24px', bottom: '1.5rem', right: '50%', x: '50%' },
   };
+
+  const currentStatus = isRecording ? "Listening..." : isProcessing ? "Thinking..." : isPlaying ? "Speaking..." : assistantReply;
+
 
   return (
       <AnimatePresence>
@@ -261,34 +229,21 @@ export function VoiceAssistant() {
                           </div>
 
                           <div className="my-2 text-white/90 min-h-[40px] flex items-center justify-start text-sm">
-                              {isProcessing && !assistantReply && (
+                               {isProcessing && (
                                   <div className="flex items-center gap-2 text-white/70">
                                       <Loader2 className="animate-spin h-4 w-4" />
-                                      <span>Thinking...</span>
                                   </div>
                               )}
-                              <p>{assistantReply}</p>
+                              <p className="ml-2">{currentStatus}</p>
                           </div>
 
                           <div className="flex items-center gap-2 w-full mt-2">
-                              <input
-                                  type="text"
-                                  value={userInput}
-                                  onChange={(e) => setUserInput(e.target.value)}
-                                  onKeyDown={(e) => e.key === 'Enter' && handleUserInput(userInput)}
-                                  placeholder={isRecording ? "Listening..." : "Ask or type anything..."}
-                                  className="flex-1 text-sm bg-transparent text-white placeholder:text-white/50 outline-none border-b border-white/20 focus:border-orange-400 transition-colors py-1"
-                                  disabled={isRecording || isProcessing || isPlaying}
-                              />
                               <button
                                   onClick={isRecording ? stopRecording : startRecording}
                                   className={`p-2 rounded-full transition-colors ${isRecording ? 'bg-red-500 text-white animate-pulse' : 'bg-white/20 text-white/80 hover:bg-white/30'}`}
                                   disabled={isProcessing || isPlaying}
                               >
                                   {isRecording ? <StopCircle size={20} /> : <Mic size={20} />}
-                              </button>
-                              <button onClick={() => handleUserInput(userInput)} disabled={!userInput || isRecording || isProcessing || isPlaying} className="p-2 rounded-full bg-white/20 text-white/80 hover:bg-white/30 disabled:opacity-50 disabled:cursor-not-allowed">
-                                  <Send size={20} />
                               </button>
                           </div>
                       </>
