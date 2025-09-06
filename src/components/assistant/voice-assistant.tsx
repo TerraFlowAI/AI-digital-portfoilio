@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useRef, useEffect } from "react";
@@ -288,16 +289,17 @@ export function VoiceAssistant() {
     const handleUserInput = async (input: string, mode: "voice" | "text") => {
         if (!input.trim()) return;
 
+        const currentHistory = [...history, { role: 'user' as const, content: input }];
+        setHistory(currentHistory);
         setUserInput("");
         setIsProcessing(true);
         setAssistantReply("");
         
-        setHistory(prev => [...prev, { role: 'user', content: input }]);
-
         try {
             const textStream = streamGeminiReply(input, history);
             
-            await playStreamingTTS(textStream, 
+            // This is a fire-and-forget call to start TTS playback
+            playStreamingTTS(textStream, 
                 () => setIsPlaying(true), 
                 () => setIsPlaying(false)
             );
@@ -358,7 +360,7 @@ export function VoiceAssistant() {
                                     />
                                 )}
                             </AnimatePresence>
-                            <Waveform amplitude={amplitude} />
+                             <Waveform amplitude={amplitude} />
                         </div>
                     ) : (
                         <>
