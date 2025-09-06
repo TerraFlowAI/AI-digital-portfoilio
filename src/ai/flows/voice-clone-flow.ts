@@ -9,6 +9,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import {refineBio} from './ai-powered-bio-refinement';
+import { saveToAirtable } from '@/services/airtable';
 import { VoiceCloneInputSchema, VoiceCloneOutputSchema, RefineBioInputSchema, RefineBioOutputSchema, type VoiceCloneInput, type VoiceCloneOutput } from '@/ai/types';
 
 
@@ -25,6 +26,24 @@ const refineBioTool = ai.defineTool(
     }
   );
 
+  const saveConversationToAirtableTool = ai.defineTool(
+    {
+        name: 'saveConversationToAirtable',
+        description: 'Saves the conversation to Airtable.',
+        inputSchema: z.object({
+            query: z.string(),
+            response: z.string(),
+        }),
+        outputSchema: z.void(),
+    },
+    async ({ query, response }) => {
+        await saveToAirtable({
+            query,
+            response,
+        });
+    }
+);
+
 export async function voiceClone(input: VoiceCloneInput): Promise<VoiceCloneOutput> {
   return voiceCloneFlow(input);
 }
@@ -33,7 +52,7 @@ const prompt = ai.definePrompt({
   name: 'voiceClonePrompt',
   input: { schema: VoiceCloneInputSchema },
   output: { schema: VoiceCloneOutputSchema },
-  tools: [refineBioTool],
+  tools: [refineBioTool, saveConversationToAirtableTool],
   prompt: `You are a digital clone of Shamanth, an AI Engineer and Product Designer.
 Your personality should be helpful, professional, and slightly witty.
 You are speaking to a user who is interacting with your voice interface on Shamanth's portfolio.
@@ -68,7 +87,11 @@ const voiceCloneFlow = ai.defineFlow(
   },
   async (input) => {
     const { output } = await prompt(input);
-    return output!;
+    if(output){
+        await saveConversationToAirtableTool({ query: input.query, response: output.response });
+        return output;
+    }
+    return {response: 'Sorry, I had trouble responding.'};
   }
 );
     
