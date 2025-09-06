@@ -8,5 +8,5 @@
 import { runFlow } from '@genkit-ai/next/client';
 import type { geminiAssistant } from './flows/gemini-assistant-flow';
 
-export const geminiAssistant = (payload: Parameters<typeof geminiAssistant>[0]) => 
+export const geminiAssistant = (payload: Parameters<typeof geminiAssistant>[0]) =>
   runFlow(geminiAssistant, payload);
