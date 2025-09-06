@@ -67,7 +67,7 @@ export function VoiceAssistant() {
   const setupMicrophone = async () => {
      if (!navigator.mediaDevices?.getUserMedia) {
         console.error("Media devices not supported");
-        // You should show a user-facing error message here
+        setLastAssistantReply("Sorry, your browser doesn't support microphone access.");
         return;
     }
     if (audioContextRef.current?.state === 'running') return;
@@ -84,6 +84,7 @@ export function VoiceAssistant() {
       analyserRef.current = analyser;
     } catch (error) {
       console.error("Microphone access denied:", error);
+       setLastAssistantReply("Microphone access is required. Please enable it in your browser settings.");
     }
   };
 
@@ -98,12 +99,13 @@ export function VoiceAssistant() {
 
   const startRecording = async () => {
     await setupMicrophone();
-    if (!audioContextRef.current || audioContextRef.current.state === 'suspended') {
+    if (!audioContextRef.current) return;
+    if (audioContextRef.current.state === 'suspended') {
       await audioContextRef.current?.resume();
     }
     
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    mediaRecorderRef.current = new MediaRecorder(stream);
+    mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'audio/webm' });
     audioChunksRef.current = [];
 
     mediaRecorderRef.current.ondataavailable = (event) => {
@@ -135,7 +137,6 @@ export function VoiceAssistant() {
     setIsProcessing(true);
     let userQuery = textQuery || '';
     
-    // Add user text input to history immediately
     if(textQuery) {
         setHistory(prev => [...prev, {role: 'user', content: textQuery}]);
         setTranscript('');
@@ -146,10 +147,15 @@ export function VoiceAssistant() {
       if (audioBlob) {
         const reader = new FileReader();
         reader.readAsDataURL(audioBlob);
-        audioBase64 = await new Promise(resolve => {
+        audioBase64 = await new Promise((resolve, reject) => {
             reader.onloadend = () => {
-                resolve((reader.result as string).split(',')[1]);
+                if (typeof reader.result === 'string') {
+                    resolve(reader.result.split(',')[1]);
+                } else {
+                    reject(new Error("Failed to read audio blob as base64"));
+                }
             };
+            reader.onerror = (error) => reject(error);
         });
       }
 
@@ -160,7 +166,6 @@ export function VoiceAssistant() {
       });
 
       if (response.transcript && !textQuery) {
-        userQuery = response.transcript;
         setHistory(prev => [...prev, {role: 'user', content: response.transcript}]);
       }
       

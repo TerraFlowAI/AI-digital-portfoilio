@@ -95,7 +95,17 @@ const geminiAssistantFlow = ai.defineFlow(
     try {
         const { media } = await ai.generate({
             model: 'googleai/gemini-2.5-flash-preview-tts',
-            config: { responseModalities: ['AUDIO'] },
+             config: {
+                responseModalities: ['AUDIO'],
+                speechConfig: {
+                    voiceConfig: {
+                        customVoiceConfig: {
+                            model: "en-IN-Wavenet-D",
+                            reportedUsage: "REALTIME"
+                        }
+                    },
+                },
+            },
             prompt: assistantReply,
         });
         if (media) {
