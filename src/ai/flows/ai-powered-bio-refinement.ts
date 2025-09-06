@@ -1,27 +1,13 @@
+
 'use server';
 /**
  * @fileOverview An AI-powered bio refinement tool.
  *
  * - refineBio - A function that handles the bio refinement process.
- * - RefineBioInput - The input type for the refineBio function.
- * - RefineBioOutput - The return type for the refineBio function.
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
-
-const RefineBioInputSchema = z.object({
-  bio: z
-    .string()
-    .describe('The user provided bio to be refined.'),
-  desiredTone: z.string().describe('The desired tone of the bio.'),
-});
-export type RefineBioInput = z.infer<typeof RefineBioInputSchema>;
-
-const RefineBioOutputSchema = z.object({
-  refinedBio: z.string().describe('The refined bio based on the input and desired tone.'),
-});
-export type RefineBioOutput = z.infer<typeof RefineBioOutputSchema>;
+import { RefineBioInputSchema, RefineBioOutputSchema, type RefineBioInput, type RefineBioOutput } from '@/ai/types';
 
 export async function refineBio(input: RefineBioInput): Promise<RefineBioOutput> {
   return refineBioFlow(input);
@@ -50,3 +36,4 @@ const refineBioFlow = ai.defineFlow(
     return output!;
   }
 );
+    

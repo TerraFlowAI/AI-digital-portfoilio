@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, Send, Bot, X, Loader2 } from 'lucide-react';
 import { voiceClone } from '@/ai/flows/voice-clone-flow';
 import { textToSpeech } from '@/ai/flows/tts-flow';
+import type { VoiceCloneInput } from '@/ai/types';
 
 // Simple Waveform Component
 const Waveform = ({ amplitude }: { amplitude: number }) => {
@@ -36,9 +37,10 @@ export function VoiceAssistant() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [transcript, setTranscript] = useState("");
-  const [lastAssistantReply, setLastAssistantReply] = useState("Hello! How can I help you today?");
   const [isExpanded, setIsExpanded] = useState(false);
   const [amplitude, setAmplitude] = useState(0);
+  const [history, setHistory] = useState<VoiceCloneInput['history']>([]);
+  const [lastAssistantReply, setLastAssistantReply] = useState("Hello! How can I help you today?");
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -94,7 +96,8 @@ export function VoiceAssistant() {
     }
 
     await setupMicrophone();
-    if (!window.SpeechRecognition && !window.webkitSpeechRecognition) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
       console.error("Speech recognition not supported in this browser.");
       return;
     }
@@ -102,7 +105,7 @@ export function VoiceAssistant() {
     setIsListening(true);
     setTranscript("");
 
-    const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    const recognition = new SpeechRecognition();
     recognition.lang = navigator.language || 'en-US';
     recognition.interimResults = true;
     recognition.continuous = false;
@@ -121,9 +124,13 @@ export function VoiceAssistant() {
         cancelAnimationFrame(animationFrameRef.current);
         setAmplitude(0);
       }
+       if (recognitionRef.current?.finalTranscript) {
+        handleSend(recognitionRef.current.finalTranscript);
+      }
+      recognitionRef.current = null;
     };
     
-    recognition.onerror = (event) => {
+     recognition.onerror = (event) => {
       console.error("Speech recognition error:", event.error);
       setIsListening(false);
       if (animationFrameRef.current) {
@@ -133,16 +140,29 @@ export function VoiceAssistant() {
     };
 
     recognition.start();
-    recognitionRef.current = recognition;
+    (recognition as any).finalTranscript = '';
+    recognition.addEventListener('result', (e) => {
+      (recognition as any).finalTranscript = Array.from(e.results).map(r => r[0].transcript).join('');
+    });
+    
+    recognitionRef.current = recognition as any;
     animationFrameRef.current = requestAnimationFrame(measureAmplitude);
   };
 
-  const handleSend = async () => {
-    if (!transcript) return;
+  const handleSend = async (query?: string) => {
+    const currentQuery = query || transcript;
+    if (!currentQuery) return;
+
     setIsProcessing(true);
+    setTranscript("");
+    
+    const newHistory: VoiceCloneInput['history'] = [...(history ?? []), { role: 'user', content: currentQuery }];
+    setHistory(newHistory);
+
     try {
-      const aiResponse = await voiceClone({ query: transcript, history: [] });
+      const aiResponse = await voiceClone({ query: currentQuery, history: newHistory });
       setLastAssistantReply(aiResponse.response);
+      setHistory([...newHistory, { role: 'model', content: aiResponse.response }]);
 
       const audioResponse = await textToSpeech(aiResponse.response);
       if (audioRef.current && audioResponse.media) {
@@ -155,7 +175,6 @@ export function VoiceAssistant() {
       setLastAssistantReply("Sorry, I had trouble responding.");
     } finally {
       setIsProcessing(false);
-      setTranscript("");
     }
   };
 
@@ -247,7 +266,7 @@ export function VoiceAssistant() {
                 >
                   <Mic size={20} />
                 </button>
-                <button onClick={handleSend} disabled={!transcript || isProcessing} className="p-2 rounded-full bg-white/20 text-white/80 hover:bg-white/30 disabled:opacity-50">
+                <button onClick={() => handleSend()} disabled={!transcript || isProcessing} className="p-2 rounded-full bg-white/20 text-white/80 hover:bg-white/30 disabled:opacity-50">
                   <Send size={20} />
                 </button>
               </div>
@@ -258,3 +277,4 @@ export function VoiceAssistant() {
     </AnimatePresence>
   );
 }
+    

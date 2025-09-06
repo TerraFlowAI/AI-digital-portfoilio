@@ -4,26 +4,26 @@
  * @fileOverview A flow that powers the voice-assisted digital clone.
  *
  * - voiceClone - A function that takes user input and returns a response from Gemini.
- * - VoiceCloneInput - The input type for the voiceClone function.
- * - VoiceCloneOutput - The return type for the voiceClone function.
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
+import {refineBio} from './ai-powered-bio-refinement';
+import { VoiceCloneInputSchema, VoiceCloneOutputSchema, RefineBioInputSchema, type VoiceCloneInput, type VoiceCloneOutput } from '@/ai/types';
 
-const VoiceCloneInputSchema = z.object({
-  query: z.string().describe('The user\'s question or statement.'),
-  history: z.array(z.object({
-    role: z.enum(['user', 'model']),
-    content: z.string(),
-  })).optional().describe('The conversation history.'),
-});
-export type VoiceCloneInput = z.infer<typeof VoiceCloneInputSchema>;
 
-const VoiceCloneOutputSchema = z.object({
-  response: z.string().describe('The AI\'s response.'),
-});
-export type VoiceCloneOutput = z.infer<typeof VoiceCloneOutputSchema>;
+const refineBioTool = ai.defineTool(
+    {
+      name: 'refineBio',
+      description: 'Refines a biography based on a desired tone.',
+      inputSchema: RefineBioInputSchema,
+      outputSchema: z.string(),
+    },
+    async (input) => {
+      const { refinedBio } = await refineBio(input);
+      return refinedBio;
+    }
+  );
 
 export async function voiceClone(input: VoiceCloneInput): Promise<VoiceCloneOutput> {
   return voiceCloneFlow(input);
@@ -33,6 +33,7 @@ const prompt = ai.definePrompt({
   name: 'voiceClonePrompt',
   input: { schema: VoiceCloneInputSchema },
   output: { schema: VoiceCloneOutputSchema },
+  tools: [refineBioTool],
   prompt: `You are a digital clone of Shamanth, an AI Engineer and Frontend Developer.
 Your personality should be helpful, professional, and slightly witty.
 You are speaking to a user who is interacting with your voice interface on Shamanth's portfolio.
@@ -66,3 +67,4 @@ const voiceCloneFlow = ai.defineFlow(
     return output!;
   }
 );
+    
