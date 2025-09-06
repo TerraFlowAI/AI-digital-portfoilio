@@ -440,5 +440,3 @@ export function VoiceAssistant() {
         </AnimatePresence>
     );
 }
-
-    
