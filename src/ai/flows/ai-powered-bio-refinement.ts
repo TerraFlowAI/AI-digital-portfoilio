@@ -22,7 +22,7 @@ const prompt = ai.definePrompt({
   Original Bio: {{{bio}}}
   Desired Tone: {{{desiredTone}}}
 
-  Refined Bio:`,
+  Please provide a refined bio.`,
 });
 
 const refineBioFlow = ai.defineFlow(

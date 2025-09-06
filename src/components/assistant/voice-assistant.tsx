@@ -52,31 +52,33 @@ export function VoiceAssistant() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       audioRef.current = new Audio();
+      audioRef.current.onplay = () => setIsPlaying(true);
       audioRef.current.onended = () => setIsPlaying(false);
     }
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
+      recognitionRef.current?.abort();
     }
   }, []);
 
   const setupMicrophone = async () => {
-    if (!audioContextRef.current) {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const context = new (window.AudioContext || window.webkitAudioContext)();
-        audioContextRef.current = context;
-        const source = context.createMediaStreamSource(stream);
-        const analyser = context.createAnalyser();
-        analyser.fftSize = 32;
-        const bufferLength = analyser.frequencyBinCount;
-        dataArrayRef.current = new Uint8Array(bufferLength);
-        source.connect(analyser);
-        analyserRef.current = analyser;
-      } catch (error) {
-        console.error("Microphone access denied:", error);
-      }
+    if (audioContextRef.current) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const context = new (window.AudioContext || (window as any).webkitAudioContext)();
+      audioContextRef.current = context;
+      const source = context.createMediaStreamSource(stream);
+      const analyser = context.createAnalyser();
+      analyser.fftSize = 32;
+      const bufferLength = analyser.frequencyBinCount;
+      dataArrayRef.current = new Uint8Array(bufferLength);
+      source.connect(analyser);
+      analyserRef.current = analyser;
+    } catch (error) {
+      console.error("Microphone access denied:", error);
+      // You might want to show a toast or message to the user here
     }
   };
 
@@ -92,11 +94,12 @@ export function VoiceAssistant() {
   const handleListen = async () => {
     if (isListening) {
       recognitionRef.current?.stop();
+      setIsListening(false);
       return;
     }
 
     await setupMicrophone();
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognition = window.SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       console.error("Speech recognition not supported in this browser.");
       return;
@@ -105,83 +108,98 @@ export function VoiceAssistant() {
     setIsListening(true);
     setTranscript("");
 
+    if (recognitionRef.current) {
+      recognitionRef.current.abort();
+    }
+
     const recognition = new SpeechRecognition();
     recognition.lang = navigator.language || 'en-US';
     recognition.interimResults = true;
-    recognition.continuous = false;
+    recognition.continuous = false; // Set to false to end after a pause
 
+    let finalTranscript = '';
     recognition.onresult = (event) => {
-      const currentTranscript = Array.from(event.results)
-        .map(result => result[0])
-        .map(result => result.transcript)
-        .join('');
-      setTranscript(currentTranscript);
+      let interimTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          finalTranscript += event.results[i][0].transcript;
+        } else {
+          interimTranscript += event.results[i][0].transcript;
+        }
+      }
+      setTranscript(interimTranscript || finalTranscript);
     };
-
+    
     recognition.onend = () => {
       setIsListening(false);
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
-        setAmplitude(0);
       }
-       if (recognitionRef.current?.finalTranscript) {
-        handleSend(recognitionRef.current.finalTranscript);
+      setAmplitude(0);
+      if (finalTranscript.trim()) {
+        handleSend(finalTranscript.trim());
       }
-      recognitionRef.current = null;
     };
     
-     recognition.onerror = (event) => {
+    recognition.onerror = (event) => {
       console.error("Speech recognition error:", event.error);
       setIsListening(false);
-      if (animationFrameRef.current) {
+       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
-        setAmplitude(0);
       }
+      setAmplitude(0);
     };
 
     recognition.start();
-    (recognition as any).finalTranscript = '';
-    recognition.addEventListener('result', (e) => {
-      (recognition as any).finalTranscript = Array.from(e.results).map(r => r[0].transcript).join('');
-    });
-    
-    recognitionRef.current = recognition as any;
-    animationFrameRef.current = requestAnimationFrame(measureAmplitude);
+    recognitionRef.current = recognition;
+    if (audioContextRef.current) {
+      animationFrameRef.current = requestAnimationFrame(measureAmplitude);
+    }
   };
 
   const handleSend = async (query?: string) => {
     const currentQuery = query || transcript;
-    if (!currentQuery) return;
+    if (!currentQuery.trim() || isProcessing) return;
 
     setIsProcessing(true);
     setTranscript("");
     
-    const newHistory: VoiceCloneInput['history'] = [...(history ?? []), { role: 'user', content: currentQuery }];
-    setHistory(newHistory);
+    const newHistoryEntry = { role: 'user' as const, content: currentQuery };
+    const updatedHistory = [...history, newHistoryEntry];
+    setHistory(updatedHistory);
 
     try {
-      const aiResponse = await voiceClone({ query: currentQuery, history: newHistory });
-      setLastAssistantReply(aiResponse.response);
-      setHistory([...newHistory, { role: 'model', content: aiResponse.response }]);
+      const aiResponse = await voiceClone({ query: currentQuery, history: updatedHistory });
+      const assistantReply = aiResponse.response;
+      setLastAssistantReply(assistantReply);
+      setHistory(prev => [...prev, { role: 'model', content: assistantReply }]);
 
-      const audioResponse = await textToSpeech(aiResponse.response);
+      const audioResponse = await textToSpeech(assistantReply);
       if (audioRef.current && audioResponse.media) {
         audioRef.current.src = audioResponse.media;
         audioRef.current.play().catch(e => console.error("Audio playback error:", e));
-        setIsPlaying(true);
       }
     } catch (error) {
       console.error("Error with AI or TTS:", error);
-      setLastAssistantReply("Sorry, I had trouble responding.");
+      const errorMessage = "Sorry, I had trouble responding.";
+      setLastAssistantReply(errorMessage);
+      setHistory(prev => [...prev, {role: 'model', content: errorMessage}]);
     } finally {
       setIsProcessing(false);
     }
   };
-
+  
   const orbSize = 64;
 
   const orbVariants = {
-    initial: { width: orbSize, height: orbSize, borderRadius: '50%' },
+    initial: { 
+      width: orbSize, 
+      height: orbSize, 
+      borderRadius: '50%',
+      bottom: '1.5rem', 
+      right: '1.5rem',
+      x: 0,
+    },
     expanded: { 
       width: 'min(400px, 90vw)', 
       height: 'auto', 
@@ -198,7 +216,7 @@ export function VoiceAssistant() {
         drag={!isExpanded}
         dragConstraints={{ top: 0, left: 0, right: 0, bottom: 0 }}
         dragMomentum={false}
-        className="fixed bottom-6 right-6 z-50 cursor-pointer"
+        className="fixed z-50 cursor-pointer"
         layout
         variants={orbVariants}
         initial="initial"
@@ -207,8 +225,8 @@ export function VoiceAssistant() {
         style={{
            backdropFilter: 'blur(16px)',
            WebkitBackdropFilter: 'blur(16px)',
-           backgroundColor: 'rgba(255, 255, 255, 0.1)',
-           border: '1px solid rgba(255, 255, 255, 0.2)',
+           backgroundColor: 'rgba(23, 23, 23, 0.5)', // neutral-900 with 50% opacity
+           border: '1px solid rgba(255, 255, 255, 0.1)',
            boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
         }}
       >
@@ -216,7 +234,7 @@ export function VoiceAssistant() {
           {!isExpanded ? (
             <div onClick={() => setIsExpanded(true)} className="w-full h-full flex items-center justify-center">
                <AnimatePresence>
-                {isListening && (
+                {(isListening || isPlaying) && (
                     <motion.div 
                         className="absolute inset-0 rounded-full bg-orange-500/30"
                         animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5]}}
@@ -228,7 +246,7 @@ export function VoiceAssistant() {
             </div>
           ) : (
             <>
-              <div className="flex items-center justify-between w-full">
+              <div className="flex items-center justify-between w-full mb-2">
                 <div className="flex items-center gap-2">
                     <Bot className="text-orange-400 h-5 w-5" />
                     <span className="text-white font-medium">AI Assistant</span>
@@ -238,35 +256,36 @@ export function VoiceAssistant() {
                 </button>
               </div>
 
-              <div className="my-4 text-white/90 min-h-[40px] flex items-center">
+              <div className="my-2 text-white/90 min-h-[40px] flex items-center justify-start text-sm">
                  {isProcessing ? (
-                     <div className="flex items-center gap-2">
-                        <Loader2 className="animate-spin h-4 w-4 text-white/70" />
-                        <span className="text-sm text-white/70">Thinking...</span>
+                     <div className="flex items-center gap-2 text-white/70">
+                        <Loader2 className="animate-spin h-4 w-4" />
+                        <span>Thinking...</span>
                      </div>
                  ) : isPlaying ? (
-                     <span className="text-sm text-white/70">Speaking...</span>
+                     <span className="text-white/70">Speaking...</span>
                  ) : (
                     <p>{lastAssistantReply}</p>
                  )}
               </div>
 
-              <div className="flex items-center gap-2 w-full">
+              <div className="flex items-center gap-2 w-full mt-2">
                 <input
                   type="text"
                   value={transcript}
                   onChange={(e) => setTranscript(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                  placeholder="Ask or type anything..."
-                  className="flex-1 bg-transparent text-white placeholder:text-white/50 outline-none border-b border-white/20 focus:border-orange-400 transition-colors"
+                  placeholder={isListening ? "Listening..." : "Ask or type anything..."}
+                  className="flex-1 text-sm bg-transparent text-white placeholder:text-white/50 outline-none border-b border-white/20 focus:border-orange-400 transition-colors py-1"
+                  disabled={isListening}
                 />
                 <button 
                   onClick={handleListen} 
-                  className={`p-2 rounded-full transition-colors ${isListening ? 'bg-orange-500 text-white' : 'bg-white/20 text-white/80 hover:bg-white/30'}`}
+                  className={`p-2 rounded-full transition-colors ${isListening ? 'bg-orange-500 text-white animate-pulse' : 'bg-white/20 text-white/80 hover:bg-white/30'}`}
                 >
                   <Mic size={20} />
                 </button>
-                <button onClick={() => handleSend()} disabled={!transcript || isProcessing} className="p-2 rounded-full bg-white/20 text-white/80 hover:bg-white/30 disabled:opacity-50">
+                <button onClick={() => handleSend()} disabled={!transcript || isProcessing} className="p-2 rounded-full bg-white/20 text-white/80 hover:bg-white/30 disabled:opacity-50 disabled:cursor-not-allowed">
                   <Send size={20} />
                 </button>
               </div>
@@ -277,4 +296,3 @@ export function VoiceAssistant() {
     </AnimatePresence>
   );
 }
-    

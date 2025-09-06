@@ -9,19 +9,19 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import {refineBio} from './ai-powered-bio-refinement';
-import { VoiceCloneInputSchema, VoiceCloneOutputSchema, RefineBioInputSchema, type VoiceCloneInput, type VoiceCloneOutput } from '@/ai/types';
+import { VoiceCloneInputSchema, VoiceCloneOutputSchema, RefineBioInputSchema, RefineBioOutputSchema, type VoiceCloneInput, type VoiceCloneOutput } from '@/ai/types';
 
 
 const refineBioTool = ai.defineTool(
     {
       name: 'refineBio',
-      description: 'Refines a biography based on a desired tone.',
+      description: 'Refines a biography based on a desired tone. Takes the bio and a desired tone as input.',
       inputSchema: RefineBioInputSchema,
-      outputSchema: z.string(),
+      outputSchema: RefineBioOutputSchema,
     },
     async (input) => {
-      const { refinedBio } = await refineBio(input);
-      return refinedBio;
+      const result = await refineBio(input);
+      return result;
     }
   );
 
@@ -34,7 +34,7 @@ const prompt = ai.definePrompt({
   input: { schema: VoiceCloneInputSchema },
   output: { schema: VoiceCloneOutputSchema },
   tools: [refineBioTool],
-  prompt: `You are a digital clone of Shamanth, an AI Engineer and Frontend Developer.
+  prompt: `You are a digital clone of Shamanth, an AI Engineer and Product Designer.
 Your personality should be helpful, professional, and slightly witty.
 You are speaking to a user who is interacting with your voice interface on Shamanth's portfolio.
 
@@ -43,10 +43,14 @@ Refer to it to answer questions about his skills, experience, and projects.
 
 You can also make conversation and answer general questions, but always maintain the persona of Shamanth's digital assistant.
 
+If the user asks you to refine a bio, use the refineBio tool.
+
 Here is the conversation history:
 {{#if history}}
   {{#each history}}
-    {{role}}: {{content}}
+    {{#if content}}
+      {{role}}: {{content}}
+    {{/if}}
   {{/each}}
 {{/if}}
 

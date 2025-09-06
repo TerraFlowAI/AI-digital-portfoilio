@@ -8,7 +8,7 @@ import { z } from 'zod';
 // Schema for the AI-powered bio refinement tool
 export const RefineBioInputSchema = z.object({
   bio: z.string().describe('The user provided bio to be refined.'),
-  desiredTone: z.string().describe('The desired tone of the bio.'),
+  desiredTone: z.string().describe('The desired tone for the refined bio (e.g., professional, witty, casual).'),
 });
 export type RefineBioInput = z.infer<typeof RefineBioInputSchema>;
 
@@ -19,16 +19,14 @@ export type RefineBioOutput = z.infer<typeof RefineBioOutputSchema>;
 
 
 // Schema for the voice clone flow
-const voiceCloneHistorySchema = z.array(
-  z.object({
+const messageSchema = z.object({
     role: z.enum(['user', 'model']),
     content: z.string(),
-  })
-);
+});
 
 export const VoiceCloneInputSchema = z.object({
   query: z.string().describe("The user's question or statement."),
-  history: voiceCloneHistorySchema.optional().describe('The conversation history.'),
+  history: z.array(messageSchema).optional().describe('The conversation history.'),
 });
 export type VoiceCloneInput = z.infer<typeof VoiceCloneInputSchema>;
 
